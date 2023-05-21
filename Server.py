@@ -34,8 +34,8 @@ def handle_message(message : str):
         username = msg[1]
         password = msg[2]
         
-    
-    return None
+    else:
+      return message
 
 def handle_client(client):
   while True:
@@ -43,7 +43,7 @@ def handle_client(client):
           message = client.recv(1024)
           msg = handle_message(message=message.decode())
           if(msg):
-            print(f"[LOG] : {message.decode()}")
+            print(f"[LOG] : {msg}")
       except:
           index = clients.index(client)
           clients.remove(client)

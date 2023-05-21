@@ -48,23 +48,27 @@ def client_receive():
             break
 
 def handle_input(message : str):
-    if message.startswith('/help'):
-        Help() 
+    if(message):
+        if message.startswith('/help'):
+            Help() 
+            return None
+        if message.startswith('/register'):
+            msg = message.split(' ')
+            username = msg[1]
+            password = hashlib.sha256(msg[2].encode()).digest()
+            salt = bytes(base64.b64encode(password[2:8]))
+            to_send = f"@register {username} {binascii.hexlify(password+salt).decode()}"
+            return to_send
+        if message.startswith('/login'):
+            msg = message.split(' ')
+            username = msg[1]
+            password = hashlib.sha256(msg[2].encode()).digest()
+            salt = bytes(base64.b64encode(password[2:8]))
+            to_send = f"@login {username} {binascii.hexlify(password+salt).decode()}"
+            return to_send
+        return message
+    else:
         return None
-    if message.startswith('/register'):
-        msg = message.split(' ')
-        username = msg[1]
-        password = hashlib.sha256(msg[2].encode()).digest()
-        salt = bytes(base64.b64encode(password[2:8]))
-        to_send = f"@register {username} {binascii.hexlify(password+salt).decode()}"
-        return to_send
-    if message.startswith('/login'):
-        msg = message.split(' ')
-        username = msg[1]
-        password = hashlib.sha256(msg[2].encode()).digest()
-        salt = bytes(base64.b64encode(password[2:8]))
-        to_send = f"@login {username} {binascii.hexlify(password+salt).decode()}"
-        return to_send
 def client_send():
     while True:
         message = handle_input(input(">> "))
