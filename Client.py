@@ -1,7 +1,8 @@
 import threading
 import socket
 import hashlib , binascii, base64
-
+import sys, os
+from MyCrypto import CPABE as cpabe
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(('127.0.0.1', 9999))
@@ -40,8 +41,11 @@ def Help():
 def client_receive():
     while True:
         try:
-            message = client.recv(1024).decode('utf-8')
-            print(message)
+            message = client.recv(2048).decode('utf-8')
+            if(message):
+                print(f"[NOTI] : {message}")
+            else:
+                pass
         except:
             print('Error!')
             client.close()
@@ -52,33 +56,34 @@ def handle_input(message : str):
         if message.startswith('/help'):
             Help() 
             return None
-        if message.startswith('/register'):
+        if message.startswith('/quit'):
+            sys.exit("Goodbye")
+            client.close()
+        if message.startswith('/register') or message.startswith('/login'):
             msg = message.split(' ')
+            prefix = msg[0]
             username = msg[1]
-            password = hashlib.sha256(msg[2].encode()).digest()
-            salt = bytes(base64.b64encode(password[2:8]))
-            to_send = f"@register {username} {binascii.hexlify(password+salt).decode()}"
-            return to_send
-        if message.startswith('/login'):
-            msg = message.split(' ')
-            username = msg[1]
-            password = hashlib.sha256(msg[2].encode()).digest()
-            salt = bytes(base64.b64encode(password[2:8]))
-            to_send = f"@login {username} {binascii.hexlify(password+salt).decode()}"
-            return to_send
-        return message
+            password = msg[2]
+            salt = password[2:6]
+            hashed = binascii.hexlify(hashlib.sha256((password + salt).encode()).digest())
+            if(prefix == '/register'):
+                to_send = f"@register {username} {hashed.decode()}"
+            else:
+                to_send = f"@login {username} {hashed.decode()}"
+            return to_send.encode()
+        return message.encode()
     else:
         return None
 def client_send():
     while True:
         message = handle_input(input(">> "))
         if(message):
-            client.send(message.encode('utf-8'))
+            client.send(message)
+            # print(message)
 
 def main():
     receive_thread = threading.Thread(target=client_receive)
     receive_thread.start()
-
     send_thread = threading.Thread(target=client_send)
     send_thread.start()
 
