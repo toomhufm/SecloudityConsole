@@ -115,14 +115,19 @@ def LoadKey(path_to_pk,path_to_sk,group):
     sk = bytesToObject(open(path_to_sk,"rb").read(),group)
     return pk,sk
 
-def SaveKey(path_to_pk,pk,path_to_sk,sk,group):
-    with open(path_to_pk,"wb") as f:
-        f.write(objectToBytes(pk,group))
-    with open(path_to_sk,"wb") as f:
-        f.write(objectToBytes(sk,group))
+# def SaveKey(path_to_pk,pk,path_to_sk,sk,group):
+#     with open(path_to_pk,"wb") as f:
+#         f.write(objectToBytes(pk,group))
+#     with open(path_to_sk,"wb") as f:
+#         f.write(objectToBytes(sk,group))
+
+def KeyToBytes(pk,mk,group):
+    pkb = objectToBytes(pk,group)
+    mkb = objectToBytes(mk,group)
+    return pkb,mkb
 
 def KeyGen(group):
-    cpabe = AC17CPABE(pairing_group,2)
+    cpabe = AC17CPABE(group,2)
     (pk,mk) = cpabe.setup()
     return pk,mk
 
@@ -133,15 +138,15 @@ def PrivateKeyGen(pk,mk,attribute):
 
 if __name__ == "__main__":
     debug = True
-    # instantiate a bilinear pairing map
+#     # instantiate a bilinear pairing map
     pairing_group = PairingGroup('SS512')
 
-    # AC17 CP-ABE under DLIN (2-linear)
-    cpabe = AC17CPABE(pairing_group,1)
+#     # AC17 CP-ABE under DLIN (2-linear)
+    cpabe = AC17CPABE(pairing_group,2)
 
-    atrribute = ["ONE","TWO","THREE"]
-    atrribute2 = ["FOUR","FIVE"]
-    policy_string = '((ONE and THREE) and (TWO OR FOUR))'
+#     atrribute = ["ONE","TWO","THREE"]
+#     atrribute2 = ["FOUR","FIVE"]
+#     policy_string = '((ONE and THREE) and (TWO OR FOUR))'
 
     # (pk,mk) = cpabe.setup()
     # sk = cpabe.keygen(pk,mk,atrribute)

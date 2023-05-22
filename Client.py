@@ -3,10 +3,10 @@ import socket
 import hashlib , binascii, base64
 import sys, os
 from MyCrypto import CPABE as cpabe
-
+from charm.toolbox.pairinggroup import PairingGroup,ZR, G1, G2, GT
+from Crypto.Cipher import AES
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(('127.0.0.1', 9999))
-
 def Banner():
     banner = """
                       ██████                
@@ -38,12 +38,18 @@ def Help():
     ===============================================================
     """
     print(message)
+
 def client_receive():
+    global isAuth
     while True:
         try:
             message = client.recv(2048).decode('utf-8')
             if(message):
-                print(f"[NOTI] : {message}")
+                if(message.startswith('Logged in. Welcome to Secloudity.')):
+                    isAuth = True
+                    print(f"[NOTI] : {message}")
+                else:
+                    print(f"[NOTI] : {message}")
             else:
                 pass
         except:
@@ -56,9 +62,6 @@ def handle_input(message : str):
         if message.startswith('/help'):
             Help() 
             return None
-        if message.startswith('/quit'):
-            sys.exit("Goodbye")
-            client.close()
         if message.startswith('/register') or message.startswith('/login'):
             msg = message.split(' ')
             prefix = msg[0]
@@ -71,6 +74,15 @@ def handle_input(message : str):
             else:
                 to_send = f"@login {username} {hashed.decode()}"
             return to_send.encode()
+        if message.startswith('/create'):
+            if(isAuth):
+                msg = message.split(' ')
+                groupname = msg[1]
+                to_send = f"@create {groupname}"
+                return to_send.encode()
+            else:
+                print("[!] You must login first")
+                return None
         return message.encode()
     else:
         return None
@@ -88,5 +100,7 @@ def main():
     send_thread.start()
 
 if __name__ == '__main__':
+    global isAuth 
+    isAuth = False
     Banner()
     main()
