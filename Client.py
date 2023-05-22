@@ -83,6 +83,15 @@ def handle_input(message : str):
             else:
                 print("[!] You must login first")
                 return None
+        if message.startswith('/join'):
+            if(isAuth):
+                msg = message.split(' ')
+                groupid = msg[1]
+                to_send = f"@join {groupid}"
+                return to_send.encode()
+            else:
+                print("[!] You must login first")
+                return None
         return message.encode()
     else:
         return None

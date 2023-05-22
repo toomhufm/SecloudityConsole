@@ -12,6 +12,7 @@ PORT = 9999
 ENDPOINT = (IP,PORT)
 clients = []
 session = []
+groups = []
 server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 server.bind(ENDPOINT)
 server.listen()
@@ -53,7 +54,12 @@ def create_group(ownerid : int,groupname : str,publickey : str,masterkey : str):
      f"INSERT INTO GROUPS VALUES ({groupID},{ownerid},'{groupname}','{publickey}','{masterkey}')"
   )
   conn.commit()
+  c.execute(
+     f"INSERT INTO CUSTOMER_GROUP VALUES ({groupID},{ownerid},'Owner','')"
+  )
+  conn.commit()
   conn.close()
+  groups.append({groupID:ownerid})
   return
 
 def KeyGen():
@@ -62,6 +68,37 @@ def KeyGen():
     (pkb,mkb) = cpabe.KeyToBytes(pk,mk,groupObj)
     return pkb.decode(),mkb.decode()
 
+def GetDictValue(param,dict):
+    for i in dict:
+      for key in i.keys():
+         if key == param:
+            return i[key]
+def GetUser(id):
+   for i in session:
+      for key in i.keys():
+         if i[key] == id:
+            return key
+def GetUsername(id):
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute(
+       f"SELECT USERNAME FROM CUSTOMERS WHERE CUSTOMERID = {id}"
+    )
+    username = c.fetchall()[0][0]   
+    conn.commit()
+    conn.close()
+    return username
+def GetGroup():
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute(
+        f"select GroupID,OwnerID from GROUPS"
+    )
+    data = (c.fetchall())
+    for i in data:
+        groups.append({i[0]:i[1]})
+    conn.commit()
+    conn.close()
 def handle_message(message : str, client : socket.socket):
     if(message.startswith("@register")):
         username = ""
@@ -89,15 +126,21 @@ def handle_message(message : str, client : socket.socket):
         msg = message.split(' ')
         groupname = msg[1]
         publickey,masterkey = KeyGen()
-        ownerID = 0
-        for i in session:
-          for key in i.keys():
-             if key == client:
-                ownerID = i[key]
+        ownerID = GetDictValue(client,session)
         send(f"Created group {groupname}",client)
         create_thread = threading.Thread(target=create_group, args=[ownerID,groupname,publickey,masterkey])
         create_thread.start()
-        return f"Created group {groupname}"
+        return f"Created group {groupname}\nPress Enter to continue..."
+    if(message.startswith('@join')):
+        msg = message.split(' ')
+        groupid = msg[1]
+        ownerid = GetDictValue(int(groupid),groups)
+        owner = GetUser(ownerid)
+        print(f"OwnerID : {ownerid}")
+        userid = int(GetDictValue(client,session))
+        username = GetUsername(userid)
+        send(f"Group join request from {username} #{userid} ",owner)
+        return None
     else:
       return message
 
@@ -139,6 +182,7 @@ def Banner():
     print(banner)
 def main():
     Banner()
+    GetGroup()
     LISTEN()
 
 if __name__ == '__main__':
