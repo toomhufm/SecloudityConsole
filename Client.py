@@ -74,24 +74,22 @@ def handle_input(message : str):
             else:
                 to_send = f"@login {username} {hashed.decode()}"
             return to_send.encode()
-        if message.startswith('/create'):
-            if(isAuth):
+        if(isAuth):
+            if message.startswith('/create'):
                 msg = message.split(' ')
                 groupname = msg[1]
                 to_send = f"@create {groupname}"
                 return to_send.encode()
-            else:
-                print("[!] You must login first")
-                return None
-        if message.startswith('/join'):
-            if(isAuth):
+            if message.startswith('/join'):
                 msg = message.split(' ')
                 groupid = msg[1]
                 to_send = f"@join {groupid}"
                 return to_send.encode()
-            else:
-                print("[!] You must login first")
-                return None
+            if message.startswith('/accept'):
+                to_send = message.replace('/accept','@accept')
+                return to_send.encode()          
+        else:
+            print("[!] You must login first")     
         return message.encode()
     else:
         return None

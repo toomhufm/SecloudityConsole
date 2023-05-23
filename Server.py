@@ -62,6 +62,16 @@ def create_group(ownerid : int,groupname : str,publickey : str,masterkey : str):
   groups.append({groupID:ownerid})
   return
 
+def accept(memberID,attributes,groupID):
+  conn = sqlite3.connect('database.db')
+  c = conn.cursor()
+  c.execute(
+     f"INSERT INTO CUSTOMER_GROUP VALUES ({groupID},{memberID},'Member','{attributes}')"
+  )
+  conn.commit()
+  conn.close()
+  return 
+
 def KeyGen():
     groupObj = PairingGroup('SS512')
     (pk,mk) = cpabe.KeyGen(groupObj)
@@ -136,10 +146,26 @@ def handle_message(message : str, client : socket.socket):
         groupid = msg[1]
         ownerid = GetDictValue(int(groupid),groups)
         owner = GetUser(ownerid)
-        print(f"OwnerID : {ownerid}")
         userid = int(GetDictValue(client,session))
         username = GetUsername(userid)
-        send(f"Group join request from {username} #{userid} ",owner)
+        send(f"Group {groupid} join request from {username} #{userid}\n",owner)
+        send(f"Use '/accept <userID> <attributes> <groupID>' to add member to group and give attributes\nUse '/reject <userID>' to reject join request",owner)
+        return None
+    if(message.startswith('@accept')):
+        msg = message.split(' ')
+        groupID = int(msg[3])
+        memberID = int(msg[1])
+        attributes = msg[2]
+        senderID = int(GetDictValue(client,session))
+        ownerID = GetDictValue(groupID,groups)
+        member = GetUser(memberID)
+        print(senderID == ownerID)
+        if(senderID == ownerID):
+          accept_thread = threading.Thread(target=accept, args=[memberID,attributes,groupID])
+          accept_thread.start()
+          send(f"Your request to join group #{groupID} is accepted",member)
+        else:
+          send("You are not the group owner!",client)
         return None
     else:
       return message
