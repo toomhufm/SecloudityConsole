@@ -32,7 +32,8 @@ def Help():
     /login <username> <password>      : login
     /create <group name>              : create group
     /join <group id>                  : join a group
-    /upload <group id> <path to file> : upload file to a group
+    /key <group id>                   : get group public key for encryption
+    /upload <group id> <path> <policy>: upload file to a group
     /download <group id> <file name>  : download file from a group
     /views                            : view all your groups
     ===============================================================
@@ -41,6 +42,7 @@ def Help():
 
 def client_receive():
     global isAuth
+    global receivedpk
     while True:
         try:
             message = client.recv(2048).decode('utf-8')
@@ -48,6 +50,9 @@ def client_receive():
                 if(message.startswith('Logged in. Welcome to Secloudity.')):
                     isAuth = True
                     print(f"[NOTI] : {message}")
+                elif(message.startswith('eJyd')):
+                    print("[NOTI] : Received public key for encryption")
+                    receivedpk = message.encode()
                 else:
                     print(f"[NOTI] : {message}")
             else:
@@ -57,8 +62,25 @@ def client_receive():
             client.close()
             break
 
+    
+def encrypt(message,filepath,policy):
+    global encrypted
+    global encrypted_file_name
+    # filepath = input("[+] Enter path to file : ")
+    # policy = input("[+] Please provide policy for encryption : ")
+    global receivedpk
+    groupObj = PairingGroup('SS512')
+    pubkey = cpabe.LoadKey(receivedpk,groupObj)
+    encrypted,encrypted_file_name = cpabe.ABEencryption(filepath,pubkey,policy,groupObj)
+    print(encrypted)
+    to_send = message.replace('/upload','@upload').encode() + b' ' + encrypted_file_name + b' ' + encrypted
+    client.send(to_send)
+    return 
+
 def handle_input(message : str):
     if(message):
+        global encrypted
+        global encrypted_file_name
         if message.startswith('/help'):
             Help() 
             return None
@@ -87,7 +109,27 @@ def handle_input(message : str):
                 return to_send.encode()
             if message.startswith('/accept'):
                 to_send = message.replace('/accept','@accept')
-                return to_send.encode()          
+                return to_send.encode()    
+            if message.startswith('/reject'):
+                to_send = message.replace('/reject','@reject')
+                return to_send.encode()   
+            if message.startswith('/key'):
+                to_send = message.replace('/key','@pk')
+                return to_send.encode()
+            if message.startswith('/upload'):
+                msg = message.split(' ')
+                groupID = msg[1]
+                path = msg[2]
+                policy_arr = []
+                for i in range(3,len(msg)):
+                    policy_arr.append(msg[i])
+                policy = ' '.join(policy_arr)
+                enc_thread = threading.Thread(target=encrypt,args=[message,path,policy])
+                enc_thread.start()
+                # to_send = message.replace('/upload','@upload').encode() + b' ' + encrypted_file_name + b' ' + encrypted
+                # print(to_send)
+                # return to_send
+                return None
         else:
             print("[!] You must login first")     
         return message.encode()
@@ -107,7 +149,13 @@ def main():
     send_thread.start()
 
 if __name__ == '__main__':
+    global receivedpk
     global isAuth 
+    global encrypted 
+    global encrypted_file_name
     isAuth = False
+    receivedpk = b''
+    encrypted = ''
+    encrypted_file_name = ''
     Banner()
     main()

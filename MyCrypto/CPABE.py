@@ -57,10 +57,11 @@ def ABEencryption(filename,pk,policy,group):
     session_key_size = len(session_key_ctxt_b)
     # print("Session Key " , (session_key_ctxt_b))
     # print(f" Session key size : {session_key_size}")
-    output = open(f"{filename}.scd","wb")
+    # output = open(f"{filename}.scd","wb")
     stream = struct.pack('Q',session_key_size)
-    output.write(stream)
-
+    # output.write(stream)
+    namesplit = filename.split('/')
+    outname = f"{namesplit[len(namesplit)-1]}.scd"
 
     """
     Use AES-GCM to encrypt the file then attach needed component
@@ -73,13 +74,15 @@ def ABEencryption(filename,pk,policy,group):
     # print(f"IV : {iv}")
     encryptor = AES.new(aes_key,AES.MODE_CFB,iv)
     encrypted_data = encryptor.encrypt(msg)
+    output = stream + iv + session_key_ctxt_b + encrypted_data
     # print(f"Encrypted : {encrypted_data} ")
     # print("Session Key Length : ",len(session_key_ctxt_b))
     # output = open("encrypted.scd","wb")
-    output.write(iv)
-    output.write(session_key_ctxt_b)
-    output.write(encrypted_data)
-    output.close()
+    # output.write(iv)
+    # output.write(session_key_ctxt_b)
+    # output.write(encrypted_data)
+    # output.close()
+    return output,outname.encode()
 
 
 def ABEdecryption(filename,pk,policy,sk,group):
@@ -110,10 +113,9 @@ def ABEdecryption(filename,pk,policy,sk,group):
 
     # session_key = cpabe.decrypt()
 
-def LoadKey(path_to_pk,path_to_sk,group):
-    pk = bytesToObject(open(path_to_pk,"rb").read(),group)
-    sk = bytesToObject(open(path_to_sk,"rb").read(),group)
-    return pk,sk
+def LoadKey(key,group):
+    key = bytesToObject(key,group)
+    return key
 
 # def SaveKey(path_to_pk,pk,path_to_sk,sk,group):
 #     with open(path_to_pk,"wb") as f:

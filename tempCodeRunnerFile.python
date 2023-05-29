@@ -1,0 +1,35 @@
+import string
+
+arr = [0x6d,'a','d','u','i','e','r','s','n','f','o','t','v','b','y','l']
+table = string.printable
+
+res = (arr[2],arr[5],arr[12],arr[4],arr[15],arr[7])
+print(''.join(res))
+
+
+for i in range(0,6):
+    for j in table:
+        if(i == 0):
+            if((i + ord(j) & 0xf) == 2):
+                print(j)
+                break
+        if(i == 1):
+            if((i + ord(j) & 0xf) == 5):
+                print(j)
+                break
+        if(i == 2):
+            if((i + ord(j) & 0xf) == 12):
+                print(j)
+                break
+        if(i == 3):
+            if((i + ord(j) & 0xf) == 4):
+                print(j)
+                break
+        if(i == 4):
+            if((i + ord(j) & 0xf) == 15):
+                print(j)
+                break
+        if(i == 5):
+            if((i + ord(j) & 0xf) == 7):
+                print(j)
+                break

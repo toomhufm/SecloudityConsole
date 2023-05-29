@@ -22,6 +22,7 @@ server.listen()
 
 def send(message : str,client : socket.socket):
    client.send(message.encode())
+   return
 
 def register(username,password):
   userID = random.randint(0, 100)
@@ -102,13 +103,25 @@ def GetGroup():
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
     c.execute(
-        f"select GroupID,OwnerID from GROUPS"
+        f"SELECT GroupID,OwnerID FROM GROUPS"
     )
     data = (c.fetchall())
     for i in data:
         groups.append({i[0]:i[1]})
     conn.commit()
     conn.close()
+def GetPublicKey(groupID,client : socket.socket):
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute(
+       f"SELECT PUBLICKEY FROM GROUPS WHERE GROUPID = {groupID}"
+    )
+    pk = c.fetchall()[0][0]
+    conn.commit()
+    conn.close()
+    send(pk,client)
+    return
+
 def handle_message(message : str, client : socket.socket):
     if(message.startswith("@register")):
         username = ""
@@ -166,6 +179,28 @@ def handle_message(message : str, client : socket.socket):
           send(f"Your request to join group #{groupID} is accepted",member)
         else:
           send("You are not the group owner!",client)
+        return None
+    if(message.startswith('@reject')):
+        msg = message.split(' ')
+        receiverID = int(msg[1])
+        receiver = GetUser(receiverID)
+        send("Your request is rejected!",receiver)
+        return None
+    if(message.startswith('@pk')):
+        msg = message.split(' ')
+        groupID = int(msg[1])
+        pk_thread = threading.Thread(target=GetPublicKey,args=[groupID,client])
+        pk_thread.start()
+        return "Sent public key"
+    if(message.startswith('@upload')):
+        msg = message.split(' ')
+        print(message)
+        # groupID = msg[1]
+        # filename = msg[2]
+        # encrypted = msg[3].encode()
+        # with open(f'./ServerStorage/{groupID}_{filename}','wb') as f:
+        #    f.write(encrypted)
+        # send("File uploaded",client)
         return None
     else:
       return message
