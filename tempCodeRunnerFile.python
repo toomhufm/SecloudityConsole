@@ -1,35 +1,7 @@
-import string
+enc = 'QHVwbG9hZCAxMDUxIHRlc3QudHh0LnNjZCCwBQAAAAAAAP2cCEqxH6rYPrBytUJafCxleUp3YjJ4cFkza2lPaUFpS0U5T1JTQmhibVFnVkZkUEtTSXNJQ0pEWHpBaU9pQmJJakk2YlhaT2RXOVRPVWQ1VjIwd2NYbGFSRVpvVEZGbVFtcDNTMDFETURSWFVrOXVPVGM0VFc1cVFXcE9lV0Z6UzNodmVsWkdhekZSU1Vob1JsQnlURFpwVjNGR05UY3JhMjVRZG1vMFFUa3diRUZ0WmtFMVlWRkJQU0lzSUNJeU9rZFNPUzl3YlVoM1FsUnJjbTVzYTJKMFkwRkRSazAzUlRkSVJXRnFXbU5YTUhWRk5rUmFabkZ5VEc1NGFuRndNVGx6WW1JNWNIcDRVaTl0VFVGRVVUTmlPVzFYV1haSEx6Y3pUVWh2V0ZkRWVpOXFOM1pCUlQwaUxDQWlNanBMZG1aUGVrWTBXVzQxYVhoRFNVVnhaMHgzTkUxb2JreDZaVXRITDA5MVpqVnRUazVHUTFaalJtRXJURE4yWml0TmEwaGxOelYyWVZRM1lWWTBWRzFzYzFWWWVHTjJjblE1Y0U1UmRVbFRabmxSTlhWaFFVVTlJbDBzSUNKRElqb2dleUpQVGtVaU9pQmJJakU2VWxCT05rTkZWV1ZzVGtobVIzbFZkVFJIYWtWTVR6aGtOWEE0TDJKaU1WSnRkbXcwTm01M1RVSkpPRGhhYzNSSWQyVmxNVFJuTWpGS2VISllhbk5QVEZWWFIxQk1LMFpUSzBkcEsxcFpWekJYVGtOUGNsRkZQU0lzSUNJeE9rbE1lamR1VDNrcloxWnpiakpDUlRaR2JtTnFNVkp6V1c5dk0wcGpUSEowVnpOa1Yyd3dhM1JpYVVKRmRuRk1aeXR0YjNGc2NsRXhVa1JoYmpSbVZVdHRlbUU0VVhwSFNGVTNXRTkzY1cxUldGVnRUMlozUVQwaUxDQWlNVHBVSzFsaGNURnBVeko2ZG5WQ1UyWXlhVFZWZUhWdloybDNaWHBHVWxSa2FqTkRRVlIzVkdOU05rWXlZMHBrY0hvek5GRkVjSEZhV1hScFJrdzNSVnBPVDFwRmJ6SmpaMHR2TkU1b01FNVJVRmh6VkVKalVVRTlJbDBzSUNKVVYwOGlPaUJiSWpFNldXZ3JVM0JRTWpORU9FbDFkMHQyVTBZeUsyeDVhVWh2Y1dKblJqQlVjRXRWTjBGUk1qRkdkVE5HWWpaMVNWUXlRbTFvWVZndk1WRm9SVE5CY25wMVEyOXFTRzFVVms5VFRHNVFPR3RIWTJsd1VUaHdPVkZGUFNJc0lDSXhPbEl2U1VWd2NFaHhkeXRtUXpoRVdWWnpjSFUyZVRaWmNHbzVSVWhvTUZCWlJtVjBhMEpTVURoUFRWVTNablpPWTNsb04yOUZhMWRwSzJwSWIyOVBLMkZqZFVSSFVWTnphbUZHVUdaM1dGVm1iekkwYVhsM1FUMGlMQ0FpTVRwUFQycENNRFZRTVc5bWVXbFVSMWh2Tnl0V01EUlNaRk5CVmpKWVFUSnBia0pOUVRkTE5VeGxVUzl0ZURkdllYSlJhR1ZyVFZoUlNGZHVjekpSY2pKSk9XSm1Mek5TV2tsemRVZFdLelpOZFVSU1VteElVVUU5SWwxOUxDQWlRM0FpT2lBaU16cGxPRnBLU2s1aVJXOWxlSFZtWkRKNmRFdEpZazF4VjJFclkzUmpabU00WW1ocVYzQjRSMjVqZEVweFMwdExTM2x0ZGl0RVRrdGlPSEJHYkZjM1VEaG1NUzhyVm5CMFkxVjFUR3BGT0RRelNERlRPVlZPZUdOVmFXcHRObWhuWnpJcmJXSjRUR1pIVnk4eldrbzNaR3BLY0RaU1dGZEJNSGRqVjAwNVNUUnZhVGRtYzBOSWJsbHdZekpLTmpGclFtZHJUR3d3VlZWT2IyWlhiVkkwUTJSR1YyRlhWRXhRYUVWR1FtODlJbjA9U073RM5S4KyWWSEmDTbzVQ=='
+import base64
 
-arr = [0x6d,'a','d','u','i','e','r','s','n','f','o','t','v','b','y','l']
-table = string.printable
+dec = base64.b64decode(enc)
 
-res = (arr[2],arr[5],arr[12],arr[4],arr[15],arr[7])
-print(''.join(res))
-
-
-for i in range(0,6):
-    for j in table:
-        if(i == 0):
-            if((i + ord(j) & 0xf) == 2):
-                print(j)
-                break
-        if(i == 1):
-            if((i + ord(j) & 0xf) == 5):
-                print(j)
-                break
-        if(i == 2):
-            if((i + ord(j) & 0xf) == 12):
-                print(j)
-                break
-        if(i == 3):
-            if((i + ord(j) & 0xf) == 4):
-                print(j)
-                break
-        if(i == 4):
-            if((i + ord(j) & 0xf) == 15):
-                print(j)
-                break
-        if(i == 5):
-            if((i + ord(j) & 0xf) == 7):
-                print(j)
-                break
+arr = dec.split(b' ')
+[print(i) for i in arr]

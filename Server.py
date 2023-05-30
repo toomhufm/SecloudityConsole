@@ -2,7 +2,7 @@ import socket
 import threading
 import sqlite3
 import random
-import concurrent.futures
+import base64
 from MyCrypto import CPABE as cpabe
 from charm.toolbox.pairinggroup import PairingGroup,ZR, G1, G2, GT
 
@@ -122,6 +122,10 @@ def GetPublicKey(groupID,client : socket.socket):
     send(pk,client)
     return
 
+def SaveFile(filecontent : bytes,filename,groupID):
+    with open(f'./ServerStorage/{groupID}_{filename}','wb') as f:
+       f.write(filecontent)
+    return
 def handle_message(message : str, client : socket.socket):
     if(message.startswith("@register")):
         username = ""
@@ -192,15 +196,16 @@ def handle_message(message : str, client : socket.socket):
         pk_thread = threading.Thread(target=GetPublicKey,args=[groupID,client])
         pk_thread.start()
         return "Sent public key"
-    if(message.startswith('@upload')):
-        msg = message.split(' ')
-        print(message)
-        # groupID = msg[1]
-        # filename = msg[2]
-        # encrypted = msg[3].encode()
-        # with open(f'./ServerStorage/{groupID}_{filename}','wb') as f:
-        #    f.write(encrypted)
-        # send("File uploaded",client)
+    if(message.startswith('QHVwbG9hZCA')):
+        msg = base64.b64decode(message).split(b' ')
+        # print(msg)
+        groupID = msg[1].decode()
+        filename = msg[2].decode()
+        encrypted = msg[3]
+        savefile_thread = threading.Thread(target=SaveFile,args=[encrypted,filename,groupID])
+        savefile_thread.start()
+        savefile_thread.join()
+        send("File uploaded",client)
         return None
     else:
       return message
@@ -210,6 +215,7 @@ def handle_client(client):
       try:
           message = client.recv(4096)
           msg = handle_message(message=message.decode(),client=client)
+
           if(msg):
             print(f"[LOG] : {msg}")
       except:

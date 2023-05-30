@@ -63,18 +63,15 @@ def client_receive():
             break
 
     
-def encrypt(message,filepath,policy):
+def encrypt(message):
     global encrypted
     global encrypted_file_name
-    # filepath = input("[+] Enter path to file : ")
-    # policy = input("[+] Please provide policy for encryption : ")
+    filepath = input("[+] Enter path to file : ")
+    policy = input("[+] Please provide policy for encryption : ")
     global receivedpk
     groupObj = PairingGroup('SS512')
     pubkey = cpabe.LoadKey(receivedpk,groupObj)
     encrypted,encrypted_file_name = cpabe.ABEencryption(filepath,pubkey,policy,groupObj)
-    print(encrypted)
-    to_send = message.replace('/upload','@upload').encode() + b' ' + encrypted_file_name + b' ' + encrypted
-    client.send(to_send)
     return 
 
 def handle_input(message : str):
@@ -119,17 +116,14 @@ def handle_input(message : str):
             if message.startswith('/upload'):
                 msg = message.split(' ')
                 groupID = msg[1]
-                path = msg[2]
-                policy_arr = []
-                for i in range(3,len(msg)):
-                    policy_arr.append(msg[i])
-                policy = ' '.join(policy_arr)
-                enc_thread = threading.Thread(target=encrypt,args=[message,path,policy])
+                enc_thread = threading.Thread(target=encrypt,args=[message])
                 enc_thread.start()
-                # to_send = message.replace('/upload','@upload').encode() + b' ' + encrypted_file_name + b' ' + encrypted
+                enc_thread.join()
+                to_send = message.replace('/upload','@upload').encode() + b' ' + encrypted_file_name + b' ' + encrypted
+                to_send = base64.b64encode(to_send)
                 # print(to_send)
-                # return to_send
-                return None
+                # client.send(to_send)
+                return to_send
         else:
             print("[!] You must login first")     
         return message.encode()
