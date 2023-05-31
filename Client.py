@@ -5,8 +5,17 @@ import sys, os
 from MyCrypto import CPABE as cpabe
 from charm.toolbox.pairinggroup import PairingGroup,ZR, G1, G2, GT
 from Crypto.Cipher import AES
+from MyCrypto.curve25519 import *
+
+global session_public_key
+global session_secret_key
+global session_server_public_key
+session_secret_key = os.urandom(32)
+session_public_key = base_point_mult(session_secret_key)
+
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(('127.0.0.1', 9999))
+client.send(b'@ecdh ' + binascii.hexlify(session_public_key.encode()))
 def Banner():
     banner = """
                       ██████                
@@ -43,6 +52,7 @@ def Help():
 def client_receive():
     global isAuth
     global receivedpk
+    global session_server_public_key
     while True:
         try:
             message = client.recv(2048).decode('utf-8')
@@ -53,6 +63,8 @@ def client_receive():
                 elif(message.startswith('eJyd')):
                     print("[NOTI] : Received public key for encryption")
                     receivedpk = message.encode()
+                elif(message.startswith('ecdh')):
+                    session_server_public_key = message.split(' ')[1]
                 else:
                     print(f"[NOTI] : {message}")
             else:
@@ -124,6 +136,8 @@ def handle_input(message : str):
                 # print(to_send)
                 # client.send(to_send)
                 return to_send
+            if message.startswith('/download'):
+                return message.replace('/download','@download').encode()
         else:
             print("[!] You must login first")     
         return message.encode()

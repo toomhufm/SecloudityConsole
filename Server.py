@@ -5,7 +5,9 @@ import random
 import base64
 from MyCrypto import CPABE as cpabe
 from charm.toolbox.pairinggroup import PairingGroup,ZR, G1, G2, GT
-
+from MyCrypto.curve25519 import *
+import os
+import binascii
 # Initialize Server Socket
 IP = '127.0.0.1'
 PORT = 9999
@@ -15,6 +17,7 @@ session = []
 groups = []
 server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 server.bind(ENDPOINT)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.listen()
 # Thread
 
@@ -87,7 +90,7 @@ def GetDictValue(param,dict):
 def GetUser(id):
    for i in session:
       for key in i.keys():
-         if i[key] == id:
+         if i[key][0] == id:
             return key
 def GetUsername(id):
     conn = sqlite3.connect('database.db')
@@ -143,9 +146,14 @@ def handle_message(message : str, client : socket.socket):
         password = msg[2]
         logged,id = login(username,password)
         if(logged):
-           session.append({client:id})
-           send("Logged in. Welcome to Secloudity.\nPress Enter to continue...",client)
-           return f"{username} logged in"
+          #  session.append({client:[id,'']})
+          for _client in session:
+            for key in _client.keys():
+               if key == client:
+                  _client[key][0] = id
+          print(session)
+          send("Logged in. Welcome to Secloudity.\nPress Enter to continue...",client)
+          return f"{username} logged in"
         else:
            send("Wrong password",client)
            return None
@@ -153,7 +161,7 @@ def handle_message(message : str, client : socket.socket):
         msg = message.split(' ')
         groupname = msg[1]
         publickey,masterkey = KeyGen()
-        ownerID = GetDictValue(client,session)
+        ownerID = GetDictValue(client,session)[0]
         send(f"Created group {groupname}",client)
         create_thread = threading.Thread(target=create_group, args=[ownerID,groupname,publickey,masterkey])
         create_thread.start()
@@ -163,7 +171,7 @@ def handle_message(message : str, client : socket.socket):
         groupid = msg[1]
         ownerid = GetDictValue(int(groupid),groups)
         owner = GetUser(ownerid)
-        userid = int(GetDictValue(client,session))
+        userid = int(GetDictValue(client,session)[0])
         username = GetUsername(userid)
         send(f"Group {groupid} join request from {username} #{userid}\n",owner)
         send(f"Use '/accept <userID> <attributes> <groupID>' to add member to group and give attributes\nUse '/reject <userID>' to reject join request",owner)
@@ -173,7 +181,7 @@ def handle_message(message : str, client : socket.socket):
         groupID = int(msg[3])
         memberID = int(msg[1])
         attributes = msg[2]
-        senderID = int(GetDictValue(client,session))
+        senderID = int(GetDictValue(client,session)[0])
         ownerID = GetDictValue(groupID,groups)
         member = GetUser(memberID)
         print(senderID == ownerID)
@@ -206,6 +214,11 @@ def handle_message(message : str, client : socket.socket):
         savefile_thread.start()
         savefile_thread.join()
         send("File uploaded",client)
+        return None
+    if(message.startswith('@ecdh')):
+        pub_key = message.split(' ')[1]
+        session.append({client:['',pub_key]})
+        send('ecdh ' + binascii.hexlify(session_public_key.encode()).decode(),client)
         return None
     else:
       return message
@@ -253,5 +266,9 @@ def main():
     LISTEN()
 
 if __name__ == '__main__':
+    global session_public_key
+    global session_secret_key
+    session_secret_key = os.urandom(32)
+    session_public_key = base_point_mult(session_secret_key)
     main()
 
