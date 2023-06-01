@@ -34,10 +34,10 @@ aes_key
 
 """
 
+groupObj = PairingGroup('SS512')
+cpabe = AC17CPABE(groupObj,2)
 
-
-def ABEencryption(filename,pk,policy,group):
-    cpabe = AC17CPABE(group,2)
+def ABEencryption(filename,pk,policy):
     msg = open(filename,"rb").read()
     """
     Create Session key then encrypt with CP-ABE 
@@ -47,7 +47,7 @@ def ABEencryption(filename,pk,policy,group):
     serialize_encoder = ac17.mySerializeAPI()
 
 
-    session_key = group.random(GT)
+    session_key = groupObj.random(GT)
     session_key_ctxt = cpabe.encrypt(pk,session_key,policy)
 
     # for i in session_key_ctxt.values(): print((i))
@@ -85,10 +85,9 @@ def ABEencryption(filename,pk,policy,group):
     return output,outname.encode()
 
 
-def ABEdecryption(filename,pk,policy,sk,group):
+def ABEdecryption(filename,pk,policy,sk):
     serialize_encoder = ac17.mySerializeAPI()
     ciphertext_stream = open(filename,"rb")
-    cpabe = AC17CPABE(group,2)
     session_key_size = struct.unpack('Q',ciphertext_stream.read(struct.calcsize('Q')))[0]
     ciphertext_stream.close()
     ciphertext = open(filename,"rb").read()
@@ -100,7 +99,7 @@ def ABEdecryption(filename,pk,policy,sk,group):
     # print("Session Key B64 : ",session_key_ctxt_b)
     session_key_ctxt = serialize_encoder.unjsonify_ctxt(session_key_ctxt_b)
     session_key = cpabe.decrypt(pk,session_key_ctxt,sk)
-    # bytesToObject(session_key_ctxt_b,group)
+    # bytesToObject(session_key_ctxt_b,groupObj)
     # print(session_key)  
     if(session_key):
         aes_key = hashlib.sha256(str(session_key).encode()).digest()
@@ -113,23 +112,22 @@ def ABEdecryption(filename,pk,policy,sk,group):
 
     # session_key = cpabe.decrypt()
 
-def LoadKey(key,group):
-    key = bytesToObject(key,group)
+def LoadKey(key):
+    key = bytesToObject(key)
     return key
 
-# def SaveKey(path_to_pk,pk,path_to_sk,sk,group):
+# def SaveKey(path_to_pk,pk,path_to_sk,sk,groupObj):
 #     with open(path_to_pk,"wb") as f:
-#         f.write(objectToBytes(pk,group))
+#         f.write(objectToBytes(pk,groupObj))
 #     with open(path_to_sk,"wb") as f:
-#         f.write(objectToBytes(sk,group))
+#         f.write(objectToBytes(sk,groupObj))
 
-def KeyToBytes(pk,mk,group):
-    pkb = objectToBytes(pk,group)
-    mkb = objectToBytes(mk,group)
+def KeyToBytes(pk,mk):
+    pkb = objectToBytes(pk,groupObj)
+    mkb = objectToBytes(mk,groupObj)
     return pkb,mkb
 
-def KeyGen(group):
-    cpabe = AC17CPABE(group,2)
+def KeyGen():
     (pk,mk) = cpabe.setup()
     return pk,mk
 
@@ -138,35 +136,3 @@ def PrivateKeyGen(pk,mk,attribute):
     return sk 
 
 
-if __name__ == "__main__":
-    debug = True
-#     # instantiate a bilinear pairing map
-    pairing_group = PairingGroup('SS512')
-
-#     # AC17 CP-ABE under DLIN (2-linear)
-    cpabe = AC17CPABE(pairing_group,2)
-
-#     atrribute = ["ONE","TWO","THREE"]
-#     atrribute2 = ["FOUR","FIVE"]
-#     policy_string = '((ONE and THREE) and (TWO OR FOUR))'
-
-    # (pk,mk) = cpabe.setup()
-    # sk = cpabe.keygen(pk,mk,atrribute)
-
-    # SaveKey('public_key',pk,'secret_key',sk,pairing_group)
-
-    # filename = "BaoCao.docx"
-    # Load the PK and SK
-
-    # (lpk,lsk) = LoadKey('public_key2','secret_key2',pairing_group)
-
-    # print(lpk)
-    # print(lsk)
-
-
-    # cipher = encryption(filename,lpk,policy_string,pairing_group)
-    # filename = "encrypted.scd"
-
-    # recover = decryption(filename,lpk,policy_string,lsk,pairing_group)
-    # res = cpabe.decrypt(pk,cipher,sk)
-    # print(res)
