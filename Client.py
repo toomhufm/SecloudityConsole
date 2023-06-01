@@ -49,6 +49,18 @@ def Help():
     """
     print(message)
 
+
+def AESDecryption(message):
+    shared_secret = multscalar(session_secret_key,bytes.fromhex(session_server_public_key).decode())
+    key = hashlib.sha256(shared_secret.encode()).digest()
+    message = bytes.fromhex(message)
+    authTag = message[:16]
+    nonce = message[16:32]
+    ciphertext = message[32:]
+    encobj = AES.new(key,  AES.MODE_GCM, nonce)
+    return(encobj.decrypt_and_verify(ciphertext, authTag))
+
+
 def client_receive():
     global isAuth
     global receivedpk
@@ -65,6 +77,17 @@ def client_receive():
                     receivedpk = message.encode()
                 elif(message.startswith('ecdh')):
                     session_server_public_key = message.split(' ')[1]
+                elif(message.startswith('@download')):
+                    filename = message.split(' ')[1]
+                    encrypt_message = message.split(' ')[2]
+                    decrypt_message = AESDecryption(encrypt_message)
+                    if(decrypt_message):
+                        with open(f"./Downloads/{filename}","wb") as f:
+                            f.write(decrypt_message)
+                            f.close()
+                        print("[NOTI] : Downloaded file")
+                    else:
+                        print("[NOTI] : Failed to verify file")
                 else:
                     print(f"[NOTI] : {message}")
             else:
@@ -81,10 +104,10 @@ def encrypt(message):
     filepath = input("[+] Enter path to file : ")
     policy = input("[+] Please provide policy for encryption : ")
     global receivedpk
-    groupObj = PairingGroup('SS512')
-    pubkey = cpabe.LoadKey(receivedpk,groupObj)
-    encrypted,encrypted_file_name = cpabe.ABEencryption(filepath,pubkey,policy,groupObj)
+    pubkey = cpabe.LoadKey(receivedpk)
+    encrypted,encrypted_file_name = cpabe.ABEencryption(filepath,pubkey,policy)
     return 
+
 
 def handle_input(message : str):
     if(message):

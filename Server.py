@@ -8,6 +8,8 @@ from charm.toolbox.pairinggroup import PairingGroup,ZR, G1, G2, GT
 from MyCrypto.curve25519 import *
 import os
 import binascii
+from Crypto.Cipher import AES
+import hashlib
 # Initialize Server Socket
 IP = '127.0.0.1'
 PORT = 9999
@@ -77,9 +79,8 @@ def accept(memberID,attributes,groupID):
   return 
 
 def KeyGen():
-    groupObj = PairingGroup('SS512')
-    (pk,mk) = cpabe.KeyGen(groupObj)
-    (pkb,mkb) = cpabe.KeyToBytes(pk,mk,groupObj)
+    (pk,mk) = cpabe.KeyGen()
+    (pkb,mkb) = cpabe.KeyToBytes(pk,mk)
     return pkb.decode(),mkb.decode()
 
 def GetDictValue(param,dict):
@@ -129,6 +130,45 @@ def SaveFile(filecontent : bytes,filename,groupID):
     with open(f'./ServerStorage/{groupID}_{filename}','wb') as f:
        f.write(filecontent)
     return
+
+
+def AESEncryption(message,key):
+    encobj = AES.new(key, AES.MODE_GCM)
+    ciphertext,authTag=encobj.encrypt_and_digest(message)
+    return(ciphertext,authTag,encobj.nonce)
+
+def Download(userID : int,filename : str , groupID : int, client : socket.socket):
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute(
+          f"""SELECT ATTRIBUTE FROM CUSTOMER_GROUP CG, CUSTOMERS C 
+             WHERE CG.CUSTOMERID = C.CUSTOMERID AND C.CUSTOMERID = {userID} AND GROUPID = {groupID}
+          """
+    )
+    attribute = c.fetchall()[0][0].split(',')
+    attribute_list = []
+    for attr in attribute:
+       attribute_list.append(attr.upper())
+    conn.commit()
+    c.execute(
+       f"SELECT PUBLICKEY,MASTERKEY FROM GROUPS WHERE GROUPID = {groupID}"
+    )
+    (pk,mk) = c.fetchall()[0]
+    groupObj = PairingGroup('SS512')
+    pkb = cpabe.bytesToObject(pk.encode(),groupObj)
+    mkb = cpabe.bytesToObject(mk.encode(),groupObj)
+    conn.commit()
+    user_sk = cpabe.PrivateKeyGen(pkb,mkb,attribute_list)
+    # print(user_pk)
+    encrypted_file_content = f'./ServerStorage/{filename}'
+    decryted_file_content = cpabe.ABEdecryption(encrypted_file_content,pkb,user_sk)
+    # print(decryted_file_content)
+    client_pub = bytes.fromhex(GetDictValue(client,session)[1]).decode()
+    shared_secret = multscalar(session_secret_key,client_pub)
+    aes_key = hashlib.sha256(shared_secret.encode()).digest()
+    (ciphertext,authTag,nonce) = AESEncryption(decryted_file_content,aes_key)
+    send(f'@download {filename.replace(".scd","")} ' + binascii.hexlify(authTag+nonce+ciphertext).decode(),client)
+    return
 def handle_message(message : str, client : socket.socket):
     if(message.startswith("@register")):
         username = ""
@@ -151,17 +191,16 @@ def handle_message(message : str, client : socket.socket):
             for key in _client.keys():
                if key == client:
                   _client[key][0] = id
-          print(session)
           send("Logged in. Welcome to Secloudity.\nPress Enter to continue...",client)
           return f"{username} logged in"
         else:
            send("Wrong password",client)
-           return None
+           return None  
     if(message.startswith('@create')):
         msg = message.split(' ')
         groupname = msg[1]
         publickey,masterkey = KeyGen()
-        ownerID = GetDictValue(client,session)[0]
+        ownerID = int(GetDictValue(client,session)[0])  
         send(f"Created group {groupname}",client)
         create_thread = threading.Thread(target=create_group, args=[ownerID,groupname,publickey,masterkey])
         create_thread.start()
@@ -219,6 +258,15 @@ def handle_message(message : str, client : socket.socket):
         pub_key = message.split(' ')[1]
         session.append({client:['',pub_key]})
         send('ecdh ' + binascii.hexlify(session_public_key.encode()).decode(),client)
+        return None
+    if(message.startswith('@download')):
+        msg = message.split(' ')
+        groupID = int(msg[1])
+        filename = msg[2]
+        userID = int(GetDictValue(client,session)[0])
+        down_thread = threading.Thread(target=Download,args=[userID,filename,groupID,client])
+        down_thread.start()
+        down_thread.join()
         return None
     else:
       return message

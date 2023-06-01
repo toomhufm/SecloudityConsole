@@ -85,7 +85,7 @@ def ABEencryption(filename,pk,policy):
     return output,outname.encode()
 
 
-def ABEdecryption(filename,pk,policy,sk):
+def ABEdecryption(filename,pk,sk):
     serialize_encoder = ac17.mySerializeAPI()
     ciphertext_stream = open(filename,"rb")
     session_key_size = struct.unpack('Q',ciphertext_stream.read(struct.calcsize('Q')))[0]
@@ -101,19 +101,21 @@ def ABEdecryption(filename,pk,policy,sk):
     session_key = cpabe.decrypt(pk,session_key_ctxt,sk)
     # bytesToObject(session_key_ctxt_b,groupObj)
     # print(session_key)  
+    output_filename = filename.replace('./ServerStorage/','').replace('.scd','')
     if(session_key):
         aes_key = hashlib.sha256(str(session_key).encode()).digest()
         encryptor = AES.new(aes_key,AES.MODE_CFB,iv)
         decrypted_data = encryptor.decrypt(ciphertext[8+16+session_key_size:])
-        with open("a.docx","wb") as f :
-            f.write(decrypted_data)
+        # with open(f"/mnt/f/Cryptography/Projects/SecloudityConsole/Downloads/{output_filename}","wb") as f :
+        #     f.write(decrypted_data)
+        return decrypted_data
     else:
         print("Policy not satisfied!")
 
     # session_key = cpabe.decrypt()
 
 def LoadKey(key):
-    key = bytesToObject(key)
+    key = bytesToObject(key,groupObj)
     return key
 
 # def SaveKey(path_to_pk,pk,path_to_sk,sk,groupObj):
