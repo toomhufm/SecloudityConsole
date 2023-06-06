@@ -9,7 +9,7 @@ from MyCrypto.curve25519 import *
 import os
 import binascii
 from Crypto.Cipher import AES
-import hashlib
+import hashlib , pickle
 # Initialize Server Socket
 IP = '127.0.0.1'
 PORT = 9999
@@ -25,7 +25,7 @@ server.listen()
 
 # =========================================
 
-def send(message : str,client : socket.socket):
+def send(message ,client : socket.socket):
    client.send(message.encode())
    return
 
@@ -169,6 +169,21 @@ def Download(userID : int,filename : str , groupID : int, client : socket.socket
     (ciphertext,authTag,nonce) = AESEncryption(decryted_file_content,aes_key)
     send(f'@download {filename.replace(".scd","")} ' + binascii.hexlify(authTag+nonce+ciphertext).decode(),client)
     return
+
+def Views(userID : int, client : socket.socket):
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute(
+      f"""SELECT G.GroupID, G.GroupName , Role FROM CUSTOMER_GROUP CG, CUSTOMERS C , GROUPS G
+        WHERE CG.CUSTOMERID = C.CUSTOMERID AND CG.GroupID = G.GroupID AND C.CUSTOMERID = {userID}"""
+    )  
+    data = c.fetchall()  
+    conn.commit()
+    conn.close()
+    tosend = b"@views " + binascii.hexlify(pickle.dumps(data))
+    client.send(tosend)
+    return 
+
 def handle_message(message : str, client : socket.socket):
     if(message.startswith("@register")):
         username = ""
@@ -267,6 +282,12 @@ def handle_message(message : str, client : socket.socket):
         down_thread = threading.Thread(target=Download,args=[userID,filename,groupID,client])
         down_thread.start()
         down_thread.join()
+        return None
+    if(message.startswith('@views')):
+        userID = int(GetDictValue(client,session)[0])
+        view_thread = threading.Thread(target=Views,args=[userID,client])
+        view_thread.start()
+        view_thread.join()
         return None
     else:
       return message

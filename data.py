@@ -1,34 +1,21 @@
-import os
-import binascii
-from MyCrypto.curve25519 import *
+import sqlite3    
+from tabulate import tabulate
 
+userID = 87
+conn = sqlite3.connect('database.db')
+c = conn.cursor()
+c.execute(
+  f"""SELECT G.GroupID, G.GroupName , Role FROM CUSTOMER_GROUP CG, CUSTOMERS C , GROUPS G
+    WHERE CG.CUSTOMERID = C.CUSTOMERID AND CG.GroupID = G.GroupID AND C.CUSTOMERID = {userID}"""
+)  
+data = c.fetchall()  
+conn.commit()
+conn.close()
 
-a = os.urandom(32)
-b = os.urandom(32)
-# a = int_to_bytes(10,32) # just for testing a=10 (32 bytes - 256 bits)
-# b = int_to_bytes(12,32) # just for testing b=12 (32 bytes - 256 bits)
+to_print = [0]*len(data)
 
-# print (f"\n\nBob private (b):\t{bytes_to_int(b)}")
-# print (f"Alice private (a): \t{bytes_to_int(a)}")
+for i in range(0,len(data)):
+    to_print[i] = [data[i][0],data[i][1],data[i][2]]
+print(tabulate(to_print,headers=["Group ID","Group Name","Role"]))
 
-
-
-# Traditional ECDH: 
-a_pub = base_point_mult(a)
-b_pub = base_point_mult(b)
-print(type(a_pub))
-
-ahex = (binascii.hexlify(a_pub.encode()))
-aunhex = (binascii.unhexlify(ahex).decode())
-
-
-# print ("\n\nBob public (bG):\t",binascii.hexlify(b_pub.encode()))
-
-# print ("Alice public (aG):\t",binascii.hexlify(a_pub.encode()))
-
-k_a = multscalar(a, b_pub) # a (bG)
-k_b = multscalar(b, aunhex) # b (aG)
-# print(type(k_a))
-
-print ("\n\nBob shared (b)aG:\t",binascii.hexlify(k_b.encode()))
-print ("Alice shared (a)bG:\t",binascii.hexlify(k_a.encode()))
+print(type('a'))

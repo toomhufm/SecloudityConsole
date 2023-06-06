@@ -1,12 +1,12 @@
 import threading
 import socket
 import hashlib , binascii, base64
-import sys, os
+import sys, os , pickle
 from MyCrypto import CPABE as cpabe
 from charm.toolbox.pairinggroup import PairingGroup,ZR, G1, G2, GT
 from Crypto.Cipher import AES
 from MyCrypto.curve25519 import *
-
+from tabulate import tabulate
 global session_public_key
 global session_secret_key
 global session_server_public_key
@@ -60,6 +60,13 @@ def AESDecryption(message):
     encobj = AES.new(key,  AES.MODE_GCM, nonce)
     return(encobj.decrypt_and_verify(ciphertext, authTag))
 
+def ViewsData(data):
+    to_print = [0]*len(data)
+    for i in range(0,len(data)):
+        to_print[i] = [data[i][0],data[i][1],data[i][2]]
+    print(tabulate(to_print,headers=["Group ID","Group Name","Role"],stralign="center"))
+    print("Press Enter to continue...")
+    return
 
 def client_receive():
     global isAuth
@@ -75,6 +82,12 @@ def client_receive():
                 elif(message.startswith('eJyd')):
                     print("[NOTI] : Received public key for encryption")
                     receivedpk = message.encode()
+                elif(message.startswith('@views')):
+                    msg = message.split('@views ')[1].encode()
+                    data = binascii.unhexlify(msg)
+                    data = pickle.loads(binascii.unhexlify(msg))
+                    print("[Info] : ")
+                    ViewsData(data)
                 elif(message.startswith('ecdh')):
                     session_server_public_key = message.split(' ')[1]
                 elif(message.startswith('@download')):
@@ -92,8 +105,8 @@ def client_receive():
                     print(f"[NOTI] : {message}")
             else:
                 pass
-        except:
-            print('Error!')
+        except Exception as error:
+            print('Error!', error)
             client.close()
             break
 
@@ -161,6 +174,8 @@ def handle_input(message : str):
                 return to_send
             if message.startswith('/download'):
                 return message.replace('/download','@download').encode()
+            if message.startswith('/views'):
+                return message.replace('/views','@views').encode()
         else:
             print("[!] You must login first")     
         return message.encode()
