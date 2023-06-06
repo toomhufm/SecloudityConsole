@@ -79,7 +79,7 @@ def client_receive():
                 if(message.startswith('Logged in. Welcome to Secloudity.')):
                     isAuth = True
                     print(f"[NOTI] : {message}")
-                elif(message.startswith('eJyd')):
+                elif(message.startswith('eJy')):
                     print("[NOTI] : Received public key for encryption")
                     receivedpk = message.encode()
                 elif(message.startswith('@views')):

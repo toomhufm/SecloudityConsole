@@ -52,8 +52,26 @@ def login(username,password):
   else:
      return False,None
 
+def AESEncryption(message,key):
+    encobj = AES.new(key, AES.MODE_GCM)
+    ciphertext,authTag=encobj.encrypt_and_digest(message)
+    return(ciphertext,authTag,encobj.nonce)
+
+def AESDecryption(message):
+    key = open('app-secret','rb').read().decode()
+    message = bytes.fromhex(message)
+    authTag = message[:16]
+    nonce = message[16:32]
+    ciphertext = message[32:]
+    encobj = AES.new(bytes.fromhex(key),  AES.MODE_GCM, nonce)
+    return(encobj.decrypt_and_verify(ciphertext, authTag))
+
+
 def create_group(ownerid : int,groupname : str,publickey : str,masterkey : str):
   groupID = random.randint(0,100) + 1000
+  key = open('app-secret','rb').read().decode()
+  (cipher,authTag,nonce) = AESEncryption(masterkey.encode(),bytes.fromhex(key))
+  masterkey = binascii.hexlify(authTag + nonce + cipher).decode()
   conn = sqlite3.connect('database.db')
   c = conn.cursor()
   c.execute(
@@ -131,12 +149,6 @@ def SaveFile(filecontent : bytes,filename,groupID):
        f.write(filecontent)
     return
 
-
-def AESEncryption(message,key):
-    encobj = AES.new(key, AES.MODE_GCM)
-    ciphertext,authTag=encobj.encrypt_and_digest(message)
-    return(ciphertext,authTag,encobj.nonce)
-
 def Download(userID : int,filename : str , groupID : int, client : socket.socket):
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
@@ -154,10 +166,12 @@ def Download(userID : int,filename : str , groupID : int, client : socket.socket
        f"SELECT PUBLICKEY,MASTERKEY FROM GROUPS WHERE GROUPID = {groupID}"
     )
     (pk,mk) = c.fetchall()[0]
+    conn.commit()
+    conn.close()
     groupObj = PairingGroup('SS512')
     pkb = cpabe.bytesToObject(pk.encode(),groupObj)
-    mkb = cpabe.bytesToObject(mk.encode(),groupObj)
-    conn.commit()
+    decrypted_mk = AESDecryption(mk)
+    mkb = cpabe.bytesToObject(decrypted_mk,groupObj)
     user_sk = cpabe.PrivateKeyGen(pkb,mkb,attribute_list)
     # print(user_pk)
     encrypted_file_content = f'./ServerStorage/{filename}'
