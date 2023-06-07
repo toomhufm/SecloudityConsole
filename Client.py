@@ -42,7 +42,7 @@ def Help():
     /create <group name>              : create group
     /join <group id>                  : join a group
     /key <group id>                   : get group public key for encryption
-    /upload <group id> <path> <policy>: upload file to a group
+    /upload <group id>                : upload file to a group
     /download <group id> <file name>  : download file from a group
     /views                            : view all your groups
     ===============================================================
