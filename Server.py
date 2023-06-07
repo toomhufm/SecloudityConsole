@@ -198,6 +198,21 @@ def Views(userID : int, client : socket.socket):
     client.send(tosend)
     return 
 
+def IsUserInGroup(userID : int, groupID : int):
+   conn = sqlite3.connect('database.db')
+   c = conn.cursor()
+   c.execute(
+      f"""
+      SELECT C.CustomerID FROM CUSTOMER_GROUP CG, CUSTOMERS C WHERE CG.CustomerID = C.CustomerID AND CG.GroupID = {groupID} AND C.CustomerID = {userID} 
+      """
+   )
+   data = c.fetchall()
+   conn.close()
+   if(data):
+      return True
+   else:
+      return False
+
 def handle_message(message : str, client : socket.socket):
     if(message.startswith("@register")):
         username = ""
@@ -293,9 +308,12 @@ def handle_message(message : str, client : socket.socket):
         groupID = int(msg[1])
         filename = msg[2]
         userID = int(GetDictValue(client,session)[0])
-        down_thread = threading.Thread(target=Download,args=[userID,filename,groupID,client])
-        down_thread.start()
-        down_thread.join()
+        if IsUserInGroup(userID,groupID):
+            down_thread = threading.Thread(target=Download,args=[userID,filename,groupID,client])
+            down_thread.start()
+            down_thread.join()
+        else:
+           send("You are not group member!",client)
         return None
     if(message.startswith('@views')):
         userID = int(GetDictValue(client,session)[0])
