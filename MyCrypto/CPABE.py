@@ -91,7 +91,7 @@ def ABEdecryption(filename,pk,sk):
 
         return decrypted_data
     else:
-        print("Policy not satisfied!")
+        return None
 
 def LoadKey(key):
     key = bytesToObject(key,groupObj)
