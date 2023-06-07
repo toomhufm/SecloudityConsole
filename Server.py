@@ -173,15 +173,16 @@ def Download(userID : int,filename : str , groupID : int, client : socket.socket
     decrypted_mk = AESDecryption(mk)
     mkb = cpabe.bytesToObject(decrypted_mk,groupObj)
     user_sk = cpabe.PrivateKeyGen(pkb,mkb,attribute_list)
-    # print(user_pk)
     encrypted_file_content = f'./ServerStorage/{filename}'
     decryted_file_content = cpabe.ABEdecryption(encrypted_file_content,pkb,user_sk)
-    # print(decryted_file_content)
-    client_pub = bytes.fromhex(GetDictValue(client,session)[1]).decode()
-    shared_secret = multscalar(session_secret_key,client_pub)
-    aes_key = hashlib.sha256(shared_secret.encode()).digest()
-    (ciphertext,authTag,nonce) = AESEncryption(decryted_file_content,aes_key)
-    send(f'@download {filename.replace(".scd","")} ' + binascii.hexlify(authTag+nonce+ciphertext).decode(),client)
+    if(decryted_file_content):
+        client_pub = bytes.fromhex(GetDictValue(client,session)[1]).decode()
+        shared_secret = multscalar(session_secret_key,client_pub)
+        aes_key = hashlib.sha256(shared_secret.encode()).digest()
+        (ciphertext,authTag,nonce) = AESEncryption(decryted_file_content,aes_key)
+        send(f'@download {filename.replace(".scd","")} ' + binascii.hexlify(authTag+nonce+ciphertext).decode(),client)
+    else:
+       send("Your are not allow to download this file",client)
     return
 
 def Views(userID : int, client : socket.socket):
@@ -207,6 +208,7 @@ def IsUserInGroup(userID : int, groupID : int):
       """
    )
    data = c.fetchall()
+   conn.commit()
    conn.close()
    if(data):
       return True
