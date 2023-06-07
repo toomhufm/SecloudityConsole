@@ -61,10 +61,19 @@ def AESDecryption(message):
     return(encobj.decrypt_and_verify(ciphertext, authTag))
 
 def ViewsData(data):
-    to_print = [0]*len(data)
-    for i in range(0,len(data)):
-        to_print[i] = [data[i][0],data[i][1],data[i][2]]
-    print(tabulate(to_print,headers=["Group ID","Group Name","Role"],stralign="center"))
+    to_print = [0]*(len(data)-1)
+    files = data[len(data)-1].split('\n')
+    for i in range(len(data)-1):
+        groupfile = []
+        for f in files:
+            if f.startswith(str(data[i][0])):
+                groupfile.append(f)
+            else: 
+                continue
+        data[i] += ('\n'.join(groupfile),) 
+    for i in range(0,len(data)-1):
+        to_print[i] = [data[i][0],data[i][1],data[i][2],data[i][3]]
+    print(tabulate(to_print,headers=["Group ID","Group Name","Role","Files"],stralign="center",tablefmt="grid"))
     print("Press Enter to continue...")
     return
 

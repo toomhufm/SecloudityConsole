@@ -195,6 +195,18 @@ def Views(userID : int, client : socket.socket):
     data = c.fetchall()  
     conn.commit()
     conn.close()
+    dir_path = './ServerStorage'
+    files = []
+    for path in os.listdir(dir_path):
+    # check if current path is a file
+        for i in range(len(data)):
+            if os.path.isfile(os.path.join(dir_path, path)):
+                if path.startswith(str(data[i][0])):
+                    files.append(path)
+    filestring = ''
+    for i in files:
+        filestring += i + '\n'
+    data.append(filestring)
     tosend = b"@views " + binascii.hexlify(pickle.dumps(data))
     client.send(tosend)
     return 
