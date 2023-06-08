@@ -298,9 +298,13 @@ def handle_message(message : str, client : socket.socket):
     if(message.startswith('@pk')):
         msg = message.split(' ')
         groupID = int(msg[1])
-        pk_thread = threading.Thread(target=GetPublicKey,args=[groupID,client])
-        pk_thread.start()
-        return "Sent public key"
+        userID = int(GetDictValue(client,session)[0])
+        if IsUserInGroup(userID,groupID):
+            pk_thread = threading.Thread(target=GetPublicKey,args=[groupID,client])
+            pk_thread.start()
+            return "Sent public key"
+        else:
+            send("You are not the group member!",client)
     if(message.startswith('QHVwbG9hZCA')):
         msg = base64.b64decode(message).split(b' ')
         # print(msg)
