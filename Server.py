@@ -168,21 +168,26 @@ def Download(userID : int,filename : str , groupID : int, client : socket.socket
     (pk,mk) = c.fetchall()[0]
     conn.commit()
     conn.close()
-    groupObj = PairingGroup('SS512')
-    pkb = cpabe.bytesToObject(pk.encode(),groupObj)
+    # Get GroupPublicKey and generate UserSecretKey
+    pkb = cpabe.bytesToObject(pk.encode(),cpabe.groupObj)
     decrypted_mk = AESDecryption(mk)
-    mkb = cpabe.bytesToObject(decrypted_mk,groupObj)
+    mkb = cpabe.bytesToObject(decrypted_mk,cpabe.groupObj)
     user_sk = cpabe.PrivateKeyGen(pkb,mkb,attribute_list)
-    encrypted_file_content = f'./ServerStorage/{filename}'
-    decryted_file_content = cpabe.ABEdecryption(encrypted_file_content,pkb,user_sk)
-    if(decryted_file_content):
-        client_pub = bytes.fromhex(GetDictValue(client,session)[1]).decode()
-        shared_secret = multscalar(session_secret_key,client_pub)
-        aes_key = hashlib.sha256(shared_secret.encode()).digest()
-        (ciphertext,authTag,nonce) = AESEncryption(decryted_file_content,aes_key)
-        send(f'@download {filename.replace(".scd","")} ' + binascii.hexlify(authTag+nonce+ciphertext).decode(),client)
-    else:
-       send("Your are not allow to download this file",client)
+    # Get encrypted file content then encrypt UserSecretKey with shared secret
+    encrypted_file_content = open(f'./ServerStorage/{filename}','rb').read()
+    secretkey = binascii.hexlify(cpabe.objectToBytes(user_sk,cpabe.groupObj))
+    file_content = binascii.hexlify(encrypted_file_content).decode()
+    client_pub = bytes.fromhex(GetDictValue(client,session)[1]).decode()
+    shared_secret = multscalar(session_secret_key,client_pub)
+    aes_key = hashlib.sha256(shared_secret.encode()).digest()
+    (ciphertext,authTag,nonce) = AESEncryption(secretkey,aes_key)
+    to_send = f'@sk {binascii.hexlify(authTag+nonce+ciphertext).decode()}@pk {binascii.hexlify(pk.encode()).decode()}@file {filename} {file_content}'
+    send(to_send,client)
+    # decryted_file_content = cpabe.ABEdecryption(encrypted_file_content,pkb,user_sk)
+    # if(decryted_file_content):
+    #     send(f'@download {filename.replace(".scd","")} ' + binascii.hexlify(authTag+nonce+ciphertext).decode(),client)
+    # else:
+    #    send("Your are not allow to download this file",client)
     return
 
 def Views(userID : int, client : socket.socket):

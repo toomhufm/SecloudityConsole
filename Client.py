@@ -83,7 +83,7 @@ def client_receive():
     global session_server_public_key
     while True:
         try:
-            message = client.recv(2048).decode('utf-8')
+            message = client.recv(4096*4).decode('utf-8')
             if(message):
                 if(message.startswith('Logged in. Welcome to Secloudity.')):
                     isAuth = True
@@ -99,17 +99,20 @@ def client_receive():
                     ViewsData(data)
                 elif(message.startswith('ecdh')):
                     session_server_public_key = message.split(' ')[1]
-                elif(message.startswith('@download')):
-                    filename = message.split(' ')[1]
-                    encrypt_message = message.split(' ')[2]
-                    decrypt_message = AESDecryption(encrypt_message)
-                    if(decrypt_message):
-                        with open(f"./Downloads/{filename}","wb") as f:
-                            f.write(decrypt_message)
-                            f.close()
-                        print("[NOTI] : Downloaded file")
+                elif(message.startswith('@sk')):
+                    secretkey = message.split('@sk ')[1].split('@pk ')[0]
+                    publickey = message.split('@sk ')[1].split('@pk ')[1].split('@file ')[0]
+                    publickey = cpabe.bytesToObject(bytes.fromhex(publickey),cpabe.groupObj)
+                    filename = message.split('@sk ')[1].split('@pk ')[1].split('@file ')[1].split(' ')[0]
+                    filecontent = message.split('@sk ')[1].split('@pk ')[1].split('@file ')[1].split(' ')[1]
+                    secretkey = cpabe.bytesToObject(binascii.unhexlify(AESDecryption(secretkey)),cpabe.groupObj)
+                    decrypted = cpabe.ABEdecryption(filename,filecontent,publickey,secretkey)
+                    if(decrypted):
+                        with open(f'./Downloads/{filename.replace(".scd","")}','wb') as f:
+                            f.write(decrypted)
+                        print("[NOTI] : File downloaded")
                     else:
-                        print("[NOTI] : Failed to verify file")
+                        print("[NOTI] : You are not allowed to download this file")
                 else:
                     print(f"[NOTI] : {message}")
             else:

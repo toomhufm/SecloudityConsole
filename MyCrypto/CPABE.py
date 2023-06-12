@@ -72,18 +72,16 @@ def ABEencryption(filename,pk,policy):
     return output,outname.encode()
 
 
-def ABEdecryption(filename,pk,sk):
+def ABEdecryption(filename,filecontent,pk,sk):
     serialize_encoder = ac17.mySerializeAPI()
-    ciphertext_stream = open(filename,"rb")
-    session_key_size = struct.unpack('Q',ciphertext_stream.read(struct.calcsize('Q')))[0]
-    ciphertext_stream.close()
-    ciphertext = open(filename,"rb").read()
+    ciphertext_stream = bytes.fromhex(filecontent)
+    session_key_size = struct.unpack('Q',ciphertext_stream[:8])[0]
+    ciphertext = bytes.fromhex(filecontent)
     iv = ciphertext[8:24]
     session_key_ctxt_b = ciphertext[24:session_key_size+24]
     session_key_ctxt_b = base64.b64decode(session_key_ctxt_b)
     session_key_ctxt = serialize_encoder.unjsonify_ctxt(session_key_ctxt_b)
     session_key = cpabe.decrypt(pk,session_key_ctxt,sk)
-    output_filename = filename.replace('./ServerStorage/','').replace('.scd','')
     if(session_key):
         aes_key = hashlib.sha256(str(session_key).encode()).digest()
         encryptor = AES.new(aes_key,AES.MODE_CFB,iv)
