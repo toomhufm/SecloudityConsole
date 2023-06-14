@@ -19,7 +19,8 @@ server_ip = '20.205.46.109'
 
 client_ssl = ssl.wrap_socket(
     client, 
-    ca_certs='../ssl/rootCA.crt'
+    ca_certs='./ssl/rootCA.crt',
+    server_hostname=server_ip
     )
 
 client_ssl.write("Hello Server!")
@@ -75,7 +76,7 @@ def client_send():
     while True:
         message = handle_input(input(">> "))
         if(message):
-            client.send(message)
+            client.send(message.encode())
             # print(message)
 
 def main():

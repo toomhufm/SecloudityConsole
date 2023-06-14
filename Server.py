@@ -42,10 +42,10 @@ def GetDictValue(param,dict):
 def handle_message(message : str, client : socket.socket):
     return
 
-def handle_client(client):
+def handle_client(server_ssl,client):
   while True:
       try:
-          message = server.ssl.read()
+          message = server_ssl.read()
           msg = handle_message(message=message.decode(),client=client)
 
           if(msg):
@@ -62,13 +62,19 @@ def LISTEN():
         server_ssl = ssl.wrap_socket(
             client,
             server_side=True,
-            certfile='../ssl/rootCA.crt',
-            keyfile='../ssl/rootCA.key',
-            ssl_version=ssl.PROTOCOL_TLSv1
+            certfile='../ssl/20.205.46.109.crt',
+            keyfile='../ssl/20.205.46.109.key',
+            ssl_version=ssl.PROTOCOL_TLS
         )
-        thread = threading.Thread(target=handle_client,args=(client,))
-        thread.start()
-        clients.append(client)
+        try:
+            while server_ssl:
+                message = server_ssl.read()
+                print(message.decode())
+        except:
+            print("ERROR")
+        # thread = threading.Thread(target=handle_client,args=(server_ssl,client,))
+        # thread.start()
+        # clients.append(client)
 
 def Banner():
     banner = """
