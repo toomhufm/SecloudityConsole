@@ -19,10 +19,10 @@ server_ip = '20.205.46.109'
 
 client_ssl = ssl.wrap_socket(
     client, 
-    ca_certs='../ssl/rootCA.crt'
+    ca_certs='./ssl/20.205.46.109.crt'
     )
 
-client_ssl.write("Hello Server!")
+client_ssl.write(b"Hello Server!")
 def Banner():
     banner = """
                       ██████                
@@ -59,7 +59,7 @@ def Help():
 def client_receive():
     while True:
         try:
-            message = client.recv(4096*4).decode('utf-8')
+            message = client.recv(4096).decode('utf-8')
             if(message):
                 print(message)
         except Exception as error:
@@ -70,28 +70,16 @@ def client_receive():
     
 
 def handle_input(message : str):
-    return message
+    return message.encode()
 def client_send():
     while True:
         message = handle_input(input(">> "))
         if(message):
-            client.send(message)
+            client_ssl.write(message)
             # print(message)
 
 def main():
-    receive_thread = threading.Thread(target=client_receive)
-    receive_thread.start()
-    send_thread = threading.Thread(target=client_send)
-    send_thread.start()
-
+    client_send()
 if __name__ == '__main__':
-    global receivedpk
-    global isAuth 
-    global encrypted 
-    global encrypted_file_name
-    isAuth = True
-    receivedpk = b''
-    encrypted = ''
-    encrypted_file_name = ''
     Banner()
     main()
