@@ -211,7 +211,7 @@ if __name__ == '__main__':
     global isAuth 
     global encrypted 
     global encrypted_file_name
-    isAuth = False
+    isAuth = True
     receivedpk = b''
     encrypted = ''
     encrypted_file_name = ''
