@@ -23,8 +23,8 @@ server.listen()
 
 # =========================================
 
-def send(message ,client : socket.socket):
-    client.send(message.encode())
+def send(message ,client : ssl.SSLSocket):
+    client.write(message.encode())
     return
 
 def register(username,password):
@@ -39,8 +39,15 @@ def GetDictValue(param,dict):
          if key == param:
             return i[key]
 
-def handle_message(message : str, client : socket.socket):
-    return message
+def handle_message(message : str, client : ssl.SSLSocket):
+    if(message):
+        if message.startswith('/regiser'):
+            msg = message.split(' ')
+            username = msg[1]
+            passwd = msg[2]
+
+    else:
+        return None
 
 def handle_client(client : ssl.SSLSocket):
   while True:
