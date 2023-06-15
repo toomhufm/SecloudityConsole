@@ -10,6 +10,7 @@ import binascii
 from Crypto.Cipher import AES
 import hashlib
 from datetime import datetime
+import requests,json
 # Initialize Server Socket
 IP = '0.0.0.0'
 PORT = 1337
@@ -19,8 +20,14 @@ server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 server.bind(ENDPOINT)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.listen()
-# Thread
-
+# Database=========================================
+url = "https://ap-southeast-1.aws.data.mongodb-api.com/app/data-ehiok/endpoint/data/v1/action/"
+apikey = open("api.key",'r').read()
+headers = {
+  'Content-Type': 'application/json',
+  'Access-Control-Request-Headers': '*',
+  'api-key': apikey,
+} 
 # =========================================
 
 def send(message ,client : ssl.SSLSocket):
@@ -28,6 +35,18 @@ def send(message ,client : ssl.SSLSocket):
     return
 
 def register(username,password):
+    action = url + "insertOne"
+    payload = json.dumps({
+        "collection": "Employees",
+        "database": "CompanyData",
+        "dataSource": "CA",
+        "projection":{
+            "username": username,
+            "password": password,
+            "verified": False
+        }
+
+    })
     return
 
 def login(username,password):   
@@ -39,14 +58,15 @@ def GetDictValue(param,dict):
          if key == param:
             return i[key]
 
-def handle_message(message : str, client : ssl.SSLSocket):
+def handle_message(message : str, client : socket.socket):
     if(message):
-        if message.startswith('/regiser'):
+        if(message.startswith('/regiser')):
             msg = message.split(' ')
             username = msg[1]
-            passwd = msg[2]
-
-    else:
+            password = msg[2]
+            register(username,password)
+            return f"{username} registered!"
+    else:    
         return None
 
 def handle_client(client : ssl.SSLSocket):
