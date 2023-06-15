@@ -59,7 +59,7 @@ def Help():
 def client_receive():
     while True:
         try:
-            message = client.recv(4096).decode('utf-8')
+            message = client_ssl.read()
             if(message):
                 print(message)
         except Exception as error:
@@ -79,7 +79,10 @@ def client_send():
             # print(message)
 
 def main():
-    client_send()
+    listen = threading.Thread(target=client_receive)
+    listen.start()
+    sendthread = threading.Thread(target=client_send)
+    sendthread.start()
 if __name__ == '__main__':
     Banner()
     main()
