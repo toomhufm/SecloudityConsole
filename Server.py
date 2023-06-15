@@ -34,23 +34,71 @@ def send(message ,client : socket.socket):
     client.send(message.encode())
     return
 
-def register(username,password):
-    action = url + "insertOne"
+def UsernameExist(username):
+    action = url + "find"
     payload = json.dumps({
-        "collection": "Employees",
+        "collection": "Employee Accounts",
         "database": "CompanyData",
         "dataSource": "CA",
         "projection":{
-            "username": username,
-            "password": password,
-            "verified": False
+            "username": username
         }
-
     })
-    return
+    response = requests.request("POST",action,headers=headers,data=payload)
+    usernames =  json.loads(response.text)
+    for name in usernames['documents']:
+        if name == username:
+            return True
+    return False
+
+def register(username,password):
+
+    if(UsernameExist == True):
+        return -1
+    else:
+        action = url + "insertOne"
+        payload = json.dumps({
+            "collection": "Employee Accounts",
+            "database": "CompanyData",
+            "dataSource": "CA",
+            "document":{
+                "username": username,
+                "password": password,
+                "verified": False
+            }
+
+        })
+        response = requests.request("POST",action,headers=headers,data=payload)
+        if response:
+            return True
+        else:
+            return False
 
 def login(username,password):   
-    return
+    action = url + "findOne"
+
+    payload = json.dumps({
+        "collection": "Employee Accounts",
+        "database": "CompanyData",
+        "dataSource": "CA",
+        "filter" : {"username":username},
+        "projection":{
+            "password": 1
+        }
+    })    
+    response = requests.request("POST",action,headers=headers,data=payload)
+    if response:
+        dbpasswd = json.loads(response.text)
+        dbpasswd = dbpasswd['document']
+        if dbpasswd != None:
+            if dbpasswd['password'] == password:
+                return 1 
+            else:
+                return -1
+        else:
+            return -2
+    else:
+        return 0
 
 def GetDictValue(param,dict):
     for i in dict:
@@ -59,16 +107,45 @@ def GetDictValue(param,dict):
             return i[key]
 
 def handle_message(message : str, client : socket.socket):
-    if(message):
-        if(message.startswith('/regiser')):
-            msg = message.split(' ')
-            username = msg[1]
-            password = msg[2]
-            register(username,password)
-            return f"{username} registered!"
-    else:    
-        return None
-
+    try:
+        if(message):
+            if(message.startswith('/register')):
+                msg = message.split(' ')
+                username = msg[1]
+                password = msg[2]
+                state = register(username,password)
+                if state == True :
+                    send("Registered! Please login and verify to continue...",client)
+                    return f"{username} registered!"
+                elif state == -1 :
+                    send("Username already existed!",client)
+                else:
+                    return "An error occured while user register"
+            if(message.startswith('/login')):
+                msg = message.split(' ')
+                username = msg[1]
+                password = msg[2]
+                state = login(username,password)
+                if(state == 1):
+                    send("Loged in.",client)
+                    return f"{username} loged in."
+                elif(state == 0):
+                    send("Account not existed",client)
+                    return None 
+                elif(state == -1):
+                    send("Wrong password. Please try again.",client)
+                    return None
+                elif(state == -2):
+                    send("Account not existed",client)
+                    return None
+                else:
+                    return "An error occured while user login"
+            else:
+                return message
+        else:    
+            return None
+    except Exception as error:
+        return error
 def handle_client(client : ssl.SSLSocket):
   while True:
       try:
