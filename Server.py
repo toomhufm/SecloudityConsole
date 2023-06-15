@@ -100,6 +100,36 @@ def login(username,password):
     else:
         return 0
 
+def verify(fullname,dob,cccd,bhyt):
+    action = url + "findOne"
+    payload = json.dumps({
+        "collection": "Employees",
+        "database": "CompanyData",
+        "dataSource": "CA",
+        "filter" : {"cccd":cccd,"bhyt":bhyt,"name":fullname,"dob":dob},
+        "projection":{
+            "name":1,
+            "dob":1,
+            "cccd":1,
+            "bhyt":1
+        }
+    })    
+
+    apikey = open("api.key",'r').read()
+    headers = {
+      'Content-Type': 'application/json',
+      'Access-Control-Request-Headers': '*',
+      'api-key': apikey,
+    } 
+
+    response = requests.request("POST", action, headers=headers, data=payload)
+    if response:
+        return True
+    return False
+
+def updateVerifiedProfile():
+    return
+
 def GetDictValue(param,dict):
     for i in dict:
       for key in i.keys():
@@ -140,6 +170,19 @@ def handle_message(message : str, client : socket.socket):
                     return None
                 else:
                     return "An error occured while user login"
+            if(message.startswith('/verify')):
+                msg = message.split(' ')
+                fullname = msg[1]
+                dob = msg[2]
+                cccd = msg[3]
+                bhyt = msg[4]
+                if verify(fullname,dob,cccd,bhyt):
+                    send("Verified! Welcome to Secloudity",client)
+                    return f"{fullname} verified."
+                else:
+                    send("Information you provided is not correct. Please check again.",client)
+                    return None
+
             else:
                 return message
         else:    
