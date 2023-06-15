@@ -235,7 +235,7 @@ def Banner():
   ██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██
     ████████▓▓████████████████████████  
 
-                SECLOUDITY
+    SECLOUDITY CERTIFICATION AUTHORITY
     """
     print(banner)
 def main():
