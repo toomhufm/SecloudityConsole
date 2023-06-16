@@ -72,7 +72,11 @@ def client_receive():
                 if(message == b"@VERIFIED"):
                     Verified = True
                     print(f"[NOTI] You are Verified!\nY Press Enter to continue...")
-                print(f"[NOTI] {message.decode()}\nPress Enter to continue...")
+                elif(message.startswith(b"@KEY")):
+                    key = message.split(' ')[1]
+                    print(f"[NOTI] Key received\nY Press Enter to continue...")
+                else:
+                    print(f"[NOTI] {message.decode()}\nPress Enter to continue...")
         except Exception as error:
             print('Error!', error)
             client.close()
@@ -107,16 +111,18 @@ def handle_input(message : str):
                 birth = input("[+] Enter day of birth : ")
                 cccd = getpass("[+] Enter cccd : ")
                 return f"/verify {fullname} {birth} {ObfucasteAndHash(cccd)}".encode() 
-            elif(message.startswith("/key")):
-                return None 
-            elif(message.startswith("/upload")):
-                return None 
-            elif(message.startswith("/download")):
-                return None 
-            elif(message.startswith("/views")):
-                return None 
-            elif(message.startswith("/search")):
-                return None 
+            if(Verified):      
+                if(message.startswith("/key")):
+                    return message.encode()
+                elif(message.startswith("/upload")):
+                    return None 
+                elif(message.startswith("/download")):
+                    return None 
+                elif(message.startswith("/search")):
+                    return None
+            else:
+                print("[!] : You must verified first")
+                return None                 
         else:
             print("[!] : You must login first")
             return None
@@ -138,6 +144,8 @@ if __name__ == '__main__':
     Banner()
     global LogedIn
     global Verified
+    global Key
+    Key = b""
     Verified = False
     LogedIn = False
     main()
