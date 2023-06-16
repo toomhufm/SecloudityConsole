@@ -7,11 +7,8 @@ from charm.toolbox.pairinggroup import PairingGroup,ZR, G1, G2, GT
 from Crypto.Cipher import AES
 from MyCrypto.curve25519 import *
 from tabulate import tabulate
-global session_public_key
-global session_secret_key
-global session_server_public_key
-session_secret_key = os.urandom(32)
-session_public_key = base_point_mult(session_secret_key)
+from getpass import getpass
+
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(('20.205.46.109', 1337))
@@ -22,7 +19,7 @@ client_ssl = ssl.wrap_socket(
     ca_certs='../ssl/20.205.46.109.crt',
     )
 
-client_ssl.write(b"Hello Server!")
+# client_ssl.write(b"Hello Server!")
 def Banner():
     banner = """
                   ██████                
@@ -63,7 +60,7 @@ def client_receive():
         try:
             message = client_ssl.read()
             if(message):
-                print(message)
+                print(f"[NOTI] {message.decode()}\nPress Enter to continue...")
         except Exception as error:
             print('Error!', error)
             client.close()
@@ -76,11 +73,25 @@ def handle_input(message : str):
         if message.startswith('/help'):
             Help() 
             return None
-        if message.startswith('/register') or message.startswith('/login'):
+        elif message.startswith('/register'):
+            username = input("[+] Enter username : ")
+            password = getpass("[+] Enter password : ")
+            if(len(password) < 8):
+                print("[ERROR] : Password must be longer than 8")
+                return None
+            conf_password = getpass("[+] Confirm password : ")
+            if(conf_password == password):
+                return f"/register {username} {password}".encode()
+            else:
+                print("[ERROR] : Password did not match!")
+                return None
+        elif message.startswith('/login'):
+            username = input("[+] Enter username : ")
+            password = getpass("[+] Enter password : ")    
+            return f"/login {username} {password}".encode()
+        elif message.startswith('/create'):
             return None
-        if message.startswith('/create'):
-            return None
-        if message.startswith('/join'):
+        elif message.startswith('/join'):
             return None
     else: 
         return None
