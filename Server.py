@@ -40,6 +40,7 @@ def UsernameExist(username):
         "collection": "Employee Accounts",
         "database": "CompanyData",
         "dataSource": "CA",
+        "filter": {"username":username},
         "projection":{
             "username": username
         }
@@ -47,13 +48,13 @@ def UsernameExist(username):
     response = requests.request("POST",action,headers=headers,data=payload)
     usernames =  json.loads(response.text)
     for name in usernames['documents']:
-        if name == username:
+        if name['username'] == username:
             return True
     return False
 
 def register(username,password):
 
-    if(UsernameExist == True):
+    if(UsernameExist(username) == True):
         return -1
     else:
         action = url + "insertOne"
@@ -141,8 +142,8 @@ def handle_message(message : str, client : socket.socket):
         if(message):
             if(message.startswith('/register')):
                 msg = message.split(' ')
-                username = msg[1]
-                password = msg[2]
+                username = msg[1].strip()
+                password = msg[2].strip()
                 state = register(username,password)
                 if state == True :
                     send("Registered! Please login and verify to continue...",client)
@@ -151,7 +152,7 @@ def handle_message(message : str, client : socket.socket):
                     send("Username already existed!",client)
                 else:
                     return "An error occured while user register"
-            if(message.startswith('/login')):
+            elif(message.startswith('/login')):
                 msg = message.split(' ')
                 username = msg[1]
                 password = msg[2]
@@ -170,7 +171,7 @@ def handle_message(message : str, client : socket.socket):
                     return None
                 else:
                     return "An error occured while user login"
-            if(message.startswith('/verify')):
+            elif(message.startswith('/verify')):
                 msg = message.split(' ')
                 fullname = msg[1]
                 dob = msg[2]
@@ -184,7 +185,7 @@ def handle_message(message : str, client : socket.socket):
                     return None
 
             else:
-                return message
+                return None
         else:    
             return None
     except Exception as error:
