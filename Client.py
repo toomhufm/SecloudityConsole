@@ -56,7 +56,7 @@ def Help():
     """
     print(message)
 
-def obfucastePassword(password):
+def ObfucasteAndHash(password):
     length = len(password)
     res = ""
     for i in range(length):
@@ -69,6 +69,9 @@ def client_receive():
         try:
             message = client_ssl.read()
             if(message):
+                if(message == b"@VERIFIED"):
+                    Verified = True
+                    print(f"[NOTI] You are Verified!\nY Press Enter to continue...")
                 print(f"[NOTI] {message.decode()}\nPress Enter to continue...")
         except Exception as error:
             print('Error!', error)
@@ -90,17 +93,20 @@ def handle_input(message : str):
                 return None
             conf_password = getpass("[+] Confirm password : ")
             if(conf_password == password):
-                return f"/register {username} {obfucastePassword(password)}".encode()
+                return f"/register {username} {ObfucasteAndHash(password)}".encode()
             else:
                 print("[ERROR] : Password did not match!")
                 return None
         elif message.startswith('/login'):
             username = input("[+] Enter username : ")
             password = getpass("[+] Enter password : ")    
-            return f"/login {username} {obfucastePassword(password)}".encode()
+            return f"/login {username} {ObfucasteAndHash(password)}".encode()
         if(LogedIn):
             if(message.startswith("/verify")):
-                return None 
+                fullname = input("[+] Enter fullname : ")
+                birth = input("[+] Enter day of birth : ")
+                cccd = getpass("[+] Enter cccd : ")
+                return f"/verify {fullname} {birth} {ObfucasteAndHash(cccd)}".encode() 
             elif(message.startswith("/key")):
                 return None 
             elif(message.startswith("/upload")):
@@ -131,5 +137,7 @@ def main():
 if __name__ == '__main__':
     Banner()
     global LogedIn
+    global Verified
+    Verified = False
     LogedIn = False
     main()
