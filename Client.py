@@ -25,7 +25,7 @@ client_ssl = ssl.wrap_socket(
 client_ssl.write(b"Hello Server!")
 def Banner():
     banner = """
-                      ██████                
+                  ██████                
                 ██      ██              
               ██          ████          
             ██              ▒▒██        
@@ -44,14 +44,16 @@ def Banner():
 def Help():
     message = """
     ========================== HELP MENU ==========================
-    /register <username> <password>   : register
-    /login <username> <password>      : login
-    /create <group name>              : create group
-    /join <group id>                  : join a group
-    /key <group id>                   : get group public key for encryption
-    /upload <group id>                : upload file to a group
-    /download <group id> <file name>  : download file from a group
-    /views                            : view all your groups
+    /register                         : register
+    /login                            : login
+    /key                              : get your private key
+    /upload                           : choose file to upload
+    /download                         : download files
+    /views                            : view files info
+    /search [option : -d,-o,-n]       : search files
+    -d : search by upload date
+    -o : search by file owner name
+    -n : search by file name
     ===============================================================
     """
     print(message)
@@ -70,7 +72,18 @@ def client_receive():
     
 
 def handle_input(message : str):
-    return message.encode()
+    if(message):
+        if message.startswith('/help'):
+            Help() 
+            return None
+        if message.startswith('/register') or message.startswith('/login'):
+            return None
+        if message.startswith('/create'):
+            return None
+        if message.startswith('/join'):
+            return None
+    else: 
+        return None
 def client_send():
     while True:
         message = handle_input(input(">> "))
