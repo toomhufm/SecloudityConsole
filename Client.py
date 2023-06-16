@@ -8,7 +8,7 @@ from Crypto.Cipher import AES
 from MyCrypto.curve25519 import *
 from tabulate import tabulate
 from getpass import getpass
-
+from string import printable
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(('20.205.46.109', 1337))
@@ -55,6 +55,14 @@ def Help():
     """
     print(message)
 
+def obfucastePassword(password):
+    length = len(password)
+    res = ""
+    for i in range(length):
+      res += printable[ord(password[i]) % 94]
+    obj = hashlib.sha256(res.encode()).digest()
+    return binascii.hexlify(obj).decode()
+
 def client_receive():
     while True:
         try:
@@ -81,14 +89,14 @@ def handle_input(message : str):
                 return None
             conf_password = getpass("[+] Confirm password : ")
             if(conf_password == password):
-                return f"/register {username} {password}".encode()
+                return f"/register {username} {obfucastePassword(password)}".encode()
             else:
                 print("[ERROR] : Password did not match!")
                 return None
         elif message.startswith('/login'):
             username = input("[+] Enter username : ")
             password = getpass("[+] Enter password : ")    
-            return f"/login {username} {password}".encode()
+            return f"/login {username} {obfucastePassword(password)}".encode()
         elif message.startswith('/create'):
             return None
         elif message.startswith('/join'):
