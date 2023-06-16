@@ -43,6 +43,7 @@ def Help():
     ========================== HELP MENU ==========================
     /register                         : register
     /login                            : login
+    /verify                           : verify your account 
     /key                              : get your private key
     /upload                           : choose file to upload
     /download                         : download files
@@ -97,9 +98,21 @@ def handle_input(message : str):
             username = input("[+] Enter username : ")
             password = getpass("[+] Enter password : ")    
             return f"/login {username} {obfucastePassword(password)}".encode()
-        elif message.startswith('/create'):
-            return None
-        elif message.startswith('/join'):
+        if(LogedIn):
+            if(message.startswith("/verify")):
+                return None 
+            elif(message.startswith("/key")):
+                return None 
+            elif(message.startswith("/upload")):
+                return None 
+            elif(message.startswith("/download")):
+                return None 
+            elif(message.startswith("/views")):
+                return None 
+            elif(message.startswith("/search")):
+                return None 
+        else:
+            print("[!] : You must login first")
             return None
     else: 
         return None
@@ -117,4 +130,6 @@ def main():
     sendthread.start()
 if __name__ == '__main__':
     Banner()
+    global LogedIn
+    LogedIn = False
     main()
