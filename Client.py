@@ -69,7 +69,9 @@ def client_receive():
         try:
             message = client_ssl.read()
             if(message):
-                if(message == b"@VERIFIED"):
+                if(message == b"Loged in."):
+                    LogedIn = True
+                elif(message == b"@VERIFIED"):
                     Verified = True
                     print(f"[NOTI] You are Verified!\nY Press Enter to continue...")
                 elif(message.startswith(b"@KEY")):
