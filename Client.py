@@ -65,12 +65,16 @@ def ObfucasteAndHash(password):
     return binascii.hexlify(obj).decode()
 
 def client_receive():
+    global LogedIn
+    global Verified
+    global key
     while True:
         try:
             message = client_ssl.read()
             if(message):
                 if(message == b"Loged in."):
                     LogedIn = True
+                    print(f"[NOTI] {message.decode()}\nPress Enter to continue...")
                 elif(message == b"@VERIFIED"):
                     Verified = True
                     print(f"[NOTI] You are Verified!\nY Press Enter to continue...")
