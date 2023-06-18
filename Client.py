@@ -83,8 +83,12 @@ def upload(content, filename, username):
         'upload_date':str(datetime.date.today())
     }
     })
-    r = requests.request("POST", action, headers=headers, data=payload)
-    
+    response = requests.request("POST", action, headers=headers, data=payload)
+    result = response.text 
+    if(result):
+        return True 
+    else:
+        return False
 def ObfucasteAndHash(password):
     length = len(password)
     res = ""
@@ -111,9 +115,11 @@ def client_receive():
                     Verified = True
                     print(f"[NOTI] You are Verified!\nPress Enter to continue...")
                 elif(message.startswith(b"@PUBLIC")):
-                    publickey = message.split(b'@PUBLIC')[1]
+                    publickey = message.split(b'@PUBLIC')[1].decode()
+                    publickey = cpabe.bytesToObject(bytes.fromhex(publickey),cpabe.groupObj)
                 elif(message.startswith(b"@PRIVATE")):
-                    privatekey = message.split(b"@PRIVATE")[1]
+                    privatekey = message.split(b"@PRIVATE")[1].decode()
+                    privatekey = cpabe.bytesToObject(bytes.fromhex(privatekey),cpabe.groupObj)
                     print(f"[NOTI] Key received\nPress Enter to continue...")
                 else:
                     print(f"[NOTI] {message.decode()}\nPress Enter to continue...")
@@ -125,6 +131,7 @@ def client_receive():
     
 
 def handle_input(message : str):
+    global USERNAME
     if(message):
         if message.startswith('/help'):
             Help() 
@@ -144,6 +151,7 @@ def handle_input(message : str):
         elif message.startswith('/login'):
             username = input("[+] Enter username : ")
             password = getpass("[+] Enter password : ")    
+            USERNAME = username
             return f"/login {username} {ObfucasteAndHash(password)}".encode()
         if(LogedIn):
             if(message.startswith("/verify")):
@@ -155,9 +163,15 @@ def handle_input(message : str):
                 if(message.startswith("/key")):
                     return message.encode()
                 elif(message.startswith("/upload")):
-                    path = input("[+] Path to File : ")
-                    policy = input("[+] Policy : ")
-                    
+                    path = input("[+] Path to File : ").strip()
+                    policy = input("[+] Policy : ").strip()
+                    content = cpabe.ABEencryption(path,publickey,policy)
+                    content = binascii.hexlify(content).decode()
+                    filename = path.split('/')[-1]
+                    if(upload(content,filename,USERNAME)):
+                        print("[NOTI] File Uploaded")
+                    else:
+                        print("[NOTI] Failed to upload file")
                     return None 
                 elif(message.startswith("/download")):
                     return None 
@@ -199,8 +213,10 @@ if __name__ == '__main__':
     global Verified
     global publickey
     global privatekey
+    global USERNAME
     publickey = b""
     privatekey = b""
     Verified = False
     LogedIn = False
+    USERNAME = ""
     main()
