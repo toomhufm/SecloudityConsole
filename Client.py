@@ -20,7 +20,7 @@ server_ip = '20.205.46.109'
 
 # Database=========================================
 url = "https://ap-southeast-1.aws.data.mongodb-api.com/app/data-zbetm/endpoint/data/v1/action/"
-apikey = open("client_api.key",'r').read()
+apikey = "hSl7T5DEqopdOtu6JYzUI4taQ6BwUmTSNRtBl2VXwIwpnMfjv13fsnpMxdgQltSX"
 headers = {
   'Content-Type': 'application/json',
   'Access-Control-Request-Headers': '*',
@@ -104,10 +104,10 @@ def client_receive():
                 if(message == b"Loged in."):
                     LogedIn = True
                     print(f"[NOTI] {message.decode()}\nPress Enter to continue...")
-                elif(message == b"@VERIFIED"):
+                elif(message.startswith(b'@Verified!')):
                     Verified = True
                     print(f"[NOTI] You are Verified!\nY Press Enter to continue...")
-                elif(message.startswith(b"@KEY")):
+                elif(message.startswith(b"@PUBLIC")):
                     key = message.split(' ')[1]
                     print(f"[NOTI] Key received\nY Press Enter to continue...")
                 else:
@@ -144,7 +144,7 @@ def handle_input(message : str):
             if(message.startswith("/verify")):
                 fullname = input("[+] Enter fullname : ")
                 birth = input("[+] Enter day of birth : ")
-                cccd = getpass("[+] Enter cccd : ")
+                cccd = input("[+] Enter cccd : ")
                 return f"/verify {fullname} {birth} {ObfucasteAndHash(cccd)}".encode() 
             if(Verified):      
                 if(message.startswith("/key")):
