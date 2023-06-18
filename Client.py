@@ -77,10 +77,12 @@ def upload(content, filename, username):
     "dataSource": "Cluster0",
     "document": 
     {
-        "filename":filename,
+        "filename":filename + '.scd',
         "owner": username,
         "content":content,
-        'upload_date':str(datetime.date.today())
+        "upload_date":str(datetime.date.today()),
+        "sha256" : binascii.hexlify(hashlib.sha256(bytes.fromhex(content)).digest()).decode()
+        
     }
     })
     response = requests.request("POST", action, headers=headers, data=payload)
