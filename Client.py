@@ -91,6 +91,36 @@ def upload(content, filename, username):
         return True 
     else:
         return False
+
+def download(filename,path):
+    action = url + "findOne"
+    payload = json.dumps({
+    "collection": "Documents",
+    "database": "CompanyStorage",
+    "dataSource": "Cluster0",
+    "filter": {"filename":filename},
+    "projection": 
+    {
+        "content":1,
+        "sha256":1,
+        "filename":1
+    }
+    })
+    response = requests.request("POST", action, headers=headers, data=payload)
+    result = json.loads(response.text)['document'] 
+    if(result):
+        filename = result['filename'].replace('.scd','')
+        ctx = result['content']
+        content = cpabe.ABEdecryption(ctx,publickey,privatekey)
+        if(content):
+            with open(path+'/'+filename,'wb') as f:
+                f.write(content)
+            return True
+        else:
+            return -1
+    else:
+        return False    
+
 def ObfucasteAndHash(password):
     length = len(password)
     res = ""
@@ -176,6 +206,15 @@ def handle_input(message : str):
                         print("[NOTI] Failed to upload file")
                     return None 
                 elif(message.startswith("/download")):
+                    filename = input("Enter file name : ")
+                    path = input("Enter path to save file : ")
+                    state = download(filename,path)
+                    if(state and state != -1):
+                        print(f"[NOTI] : File downloaded at {path}")
+                    elif(state == -1):
+                        print("[NOTI] : You are not allowed to download this file!")
+                    else:
+                        print("[NOTI] : File not existed")
                     return None 
                 # elif(message.startswith("/search")):
                 #     message = message.split(' ')
