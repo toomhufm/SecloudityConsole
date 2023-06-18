@@ -61,6 +61,15 @@ def GetKey(keyname):
     r = requests.request("POST", action, headers=headers, data=payload)
     return json.loads(r.text)['document']['value']
 
+# def PrivateKeyGen(pk):
+#     mk = GetKey("master key")
+#     ctx = bytes.fromhex(mk)
+#     iv = ctx[:16]
+#     ctx = ctx[16:]
+#     aes = AES.new(key,AES.MODE_CBC,iv=iv)
+#     recover = aes.decrypt(ctx)
+#     mk = cpabe.bytesToObject(recover,cpabe.groupObj)
+#     cpabe.PrivateKeyGen(pk,mk,attribute=)
 def send(message ,client : socket.socket):
     client.send(message.encode())
     return
@@ -152,7 +161,51 @@ def verify(fullname,dob,cccd):
         return True
     return False
 
-def updateVerifiedProfile():
+def isVerified(username):
+    action = url + "findOne"
+    payload = json.dumps({
+        "collection": "Employee Accounts",
+        "database": "CompanyData",
+        "dataSource": "CA",
+        "filter" : {"username":username},
+        "projection":{
+            "verified":1
+        }
+    })    
+    
+    response = requests.request("POST", action, headers=headers, data=payload)
+    result = json.loads(response.text)['document']['verified']
+    if result:
+        return True
+    return False    
+
+def updateVerifiedProfile(username,fullname):
+    action = url + "updateOne"
+    payload = json.dumps({
+    "collection": "Employees",
+    "database": "CompanyData",
+    "dataSource": "CA",
+    "filter": {"name":fullname},
+    "update":{
+        "$set": {
+            "registered" : True,
+            "username":username
+        }
+      }
+    })
+    r = requests.request("POST", action, headers=headers, data=payload)  
+    payload = json.dumps({
+    "collection": "Employee Accounts",
+    "database": "CompanyData",
+    "dataSource": "CA",
+    "filter": {"username":username},
+    "update":{
+        "$set": {
+            "verified" : True
+        }
+      }
+    })
+    r = requests.request("POST", action, headers=headers, data=payload)  
     return
 
 def GetDictValue(param,dict):
@@ -201,17 +254,25 @@ def handle_message(message : str, client : socket.socket):
                 fullname = msg[1]
                 dob = msg[2]
                 cccd = msg[3]
-                if verify(fullname,dob,cccd):
-                    send("@Verified! Welcome to Secloudity",client)
-                    username = GetDictValue(param=client,dict=session)
-                    return f"{fullname} verified with account {username}."
+                username = GetDictValue(param=client,dict=session)
+                if(isVerified(username)):
+                    send("You already verified!",client)
+                    return None 
                 else:
-                    send("Information you provided is not correct. Please check again.",client)
-                    return None
+                    if verify(fullname,dob,cccd):
+                        send("@Verified! Welcome to Secloudity",client)
+                        updateVerifiedProfile(username,fullname)
+                        return f"{fullname} verified with account {username}."
+                    else:
+                        send("Information you provided is not correct. Please check again.",client)
+                        return None
             elif(message.startswith('/key')):
                 pk = GetKey("public key")
-                send(pk,client)
-                return "Sent key"
+                send("@PUBLIC" + pk,client)
+                # sk = PrivateKeyGen(pk)
+                send("@PRIVATE",client)
+                username = GetDictValue(param=client,dict=session)
+                return f"Sent keys to {username}"
             else:
                 return None
         else:    
