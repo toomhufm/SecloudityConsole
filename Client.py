@@ -96,7 +96,8 @@ def ObfucasteAndHash(password):
 def client_receive():
     global LogedIn
     global Verified
-    global key
+    global publickey
+    global privatekey
     while True:
         try:
             message = client_ssl.read(len=4096*2)
@@ -104,12 +105,15 @@ def client_receive():
                 if(message == b"Loged in."):
                     LogedIn = True
                     print(f"[NOTI] {message.decode()}\nPress Enter to continue...")
+                elif(message == b"@VERIFIED"):
+                    Verified = True
                 elif(message.startswith(b'@Verified!') or message.startswith(b'You already verified!')):
                     Verified = True
                     print(f"[NOTI] You are Verified!\nPress Enter to continue...")
                 elif(message.startswith(b"@PUBLIC")):
-                    print(message)
-                    key = message.split(b'@PUBLIC')[1]
+                    publickey = message.split(b'@PUBLIC')[1]
+                elif(message.startswith(b"@PRIVATE")):
+                    privatekey = message.split(b"@PRIVATE")[1]
                     print(f"[NOTI] Key received\nPress Enter to continue...")
                 else:
                     print(f"[NOTI] {message.decode()}\nPress Enter to continue...")
@@ -193,8 +197,10 @@ if __name__ == '__main__':
     Banner()
     global LogedIn
     global Verified
-    global Key
-    Key = b""
+    global publickey
+    global privatekey
+    publickey = b""
+    privatekey = b""
     Verified = False
     LogedIn = False
     main()
