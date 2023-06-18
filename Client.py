@@ -104,12 +104,13 @@ def client_receive():
                 if(message == b"Loged in."):
                     LogedIn = True
                     print(f"[NOTI] {message.decode()}\nPress Enter to continue...")
-                elif(message.startswith(b'@Verified!')):
+                elif(message.startswith(b'@Verified!') or message.startswith(b'You already verified!')):
                     Verified = True
-                    print(f"[NOTI] You are Verified!\nY Press Enter to continue...")
+                    print(f"[NOTI] You are Verified!\nPress Enter to continue...")
                 elif(message.startswith(b"@PUBLIC")):
-                    key = message.split(' ')[1]
-                    print(f"[NOTI] Key received\nY Press Enter to continue...")
+                    print(message)
+                    key = message.split(b'@PUBLIC')[1]
+                    print(f"[NOTI] Key received\nPress Enter to continue...")
                 else:
                     print(f"[NOTI] {message.decode()}\nPress Enter to continue...")
         except Exception as error:
