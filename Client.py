@@ -129,6 +129,23 @@ def ObfucasteAndHash(password):
     obj = hashlib.sha256(res.encode()).digest()
     return binascii.hexlify(obj).decode()
 
+def HandleSearch(message):
+    option = ['-d','-o','-n']
+    msg = '/search'
+    for i in message.split(' '):
+        if i in option:
+            if(i == '-d'):
+                print("Upload date format DMY\nexample : 2023-06-01 ")
+                upload_date = input('Enter upload date : ')
+                msg += f' -d {upload_date}'
+            if(i == '-o'):
+                owner_name = input('Enter owner username :  ')
+                msg += f' -o {owner_name}'
+            if(i == '-n'):
+                filename = input('Enter file name : ')
+                msg += f' -n {filename}'
+    return msg
+
 def client_receive():
     global LogedIn
     global Verified
@@ -216,18 +233,19 @@ def handle_input(message : str):
                     else:
                         print("[NOTI] : File not existed")
                     return None 
-                # elif(message.startswith("/search")):
-                #     message = message.split(' ')
-                #     l = len(message)
-                #     for i in range(l):
-                #         if (l == 1):
-                #             print("[NOTI] No option found")
-                #             return None
-                #         elif(l == 2):
-                #             if(message[i]):
-                #     #https://viblo.asia/p/viet-cli-trong-python-de-dang-voi-argparse-XL6lA2ar5ek\
-                #     #https://docs.python.org/3/library/argparse.html           
-                #     return None 
+                elif(message.startswith("/search")):
+                    _message = message.split(' ')
+                    l = len(_message)
+                    for i in range(l):
+                        if (l == 1):
+                            print("[!] : No option found!")
+                            return None
+                        elif(l > 4):
+                            print("[!] : Too many options!")
+                        else:
+                            msg = HandleSearch(message)
+                            return msg.encode()        
+                    return None 
             else:
                 print("[!] : You must verified first")
                 return None                 
