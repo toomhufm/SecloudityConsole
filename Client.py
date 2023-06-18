@@ -9,7 +9,6 @@ import datetime
 from MyCrypto import CPABE as cpabe
 from charm.toolbox.pairinggroup import PairingGroup,ZR, G1, G2, GT
 from Crypto.Cipher import AES
-from MyCrypto.curve25519 import *
 from tabulate import tabulate
 from getpass import getpass
 from string import printable
