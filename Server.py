@@ -47,6 +47,20 @@ headers = {
 # =========================================
 
 
+def GetKey(keyname):
+    action = url + "findOne"
+    payload = json.dumps({
+    "collection": "Keys",
+    "database": "CompanyData",
+    "dataSource": "CA",
+    "filter": {"name":keyname},
+    "projection":{
+        "value":1
+    }
+    })
+    r = requests.request("POST", action, headers=headers, data=payload)
+    return json.loads(r.text)['document']['value']
+
 def send(message ,client : socket.socket):
     client.send(message.encode())
     return
@@ -118,30 +132,23 @@ def login(username,password):
     else:
         return 0
 
-def verify(fullname,dob,cccd,bhyt):
+def verify(fullname,dob,cccd):
     action = url + "findOne"
     payload = json.dumps({
         "collection": "Employees",
         "database": "CompanyData",
         "dataSource": "CA",
-        "filter" : {"cccd":cccd,"bhyt":bhyt,"name":fullname,"dob":dob},
+        "filter" : {"cccd":cccd,"name":fullname,"dob":dob},
         "projection":{
             "name":1,
             "dob":1,
             "cccd":1,
-            "bhyt":1
         }
     })    
 
-    apikey = open("api.key",'r').read()
-    headers = {
-      'Content-Type': 'application/json',
-      'Access-Control-Request-Headers': '*',
-      'api-key': apikey,
-    } 
-
     response = requests.request("POST", action, headers=headers, data=payload)
-    if response:
+    result = json.loads(response.text)['document']
+    if result:
         return True
     return False
 
@@ -194,14 +201,16 @@ def handle_message(message : str, client : socket.socket):
                 fullname = msg[1]
                 dob = msg[2]
                 cccd = msg[3]
-                bhyt = msg[4]
-                if verify(fullname,dob,cccd,bhyt):
-                    send("Verified! Welcome to Secloudity",client)
-                    return f"{fullname} verified."
+                if verify(fullname,dob,cccd):
+                    send("@Verified! Welcome to Secloudity",client)
+                    username = GetDictValue(param=client,dict=session)
+                    return f"{fullname} verified with account {username}."
                 else:
                     send("Information you provided is not correct. Please check again.",client)
                     return None
             elif(message.startswith('/key')):
+                pk = GetKey("public key")
+                send(pk,client)
                 return "Sent key"
             else:
                 return None
