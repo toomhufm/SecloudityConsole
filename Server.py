@@ -11,24 +11,41 @@ from Crypto.Cipher import AES
 import hashlib
 from datetime import datetime
 import requests,json
+import subprocess
 # Initialize Server Socket
 IP = '0.0.0.0'
 PORT = 1337
 ENDPOINT = (IP,PORT)
 clients = []
+session = []
 server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 server.bind(ENDPOINT)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.listen()
+
+# Decrypt server secret key with TPM
+cmd = "./unseal.sh"
+key = subprocess.check_output(cmd,shell=True)
+key = bytes.fromhex(key.decode().strip())
+
+def UnSeal(path,key):
+    ctx = open(path,'rb').read()
+    iv = ctx[:16]
+    ctx = ctx[16:]
+    aes = AES.new(key,AES.MODE_CBC,iv=iv)
+    recover = aes.decrypt(ctx)
+    return recover
+
 # Database=========================================
 url = "https://ap-southeast-1.aws.data.mongodb-api.com/app/data-ehiok/endpoint/data/v1/action/"
-apikey = open("api.key",'r').read()
+apikey = UnSeal("./Keys/api.key.ctx",key)
 headers = {
   'Content-Type': 'application/json',
   'Access-Control-Request-Headers': '*',
   'api-key': apikey,
 } 
 # =========================================
+
 
 def send(message ,client : socket.socket):
     client.send(message.encode())
@@ -159,6 +176,7 @@ def handle_message(message : str, client : socket.socket):
                 state = login(username,password)
                 if(state == 1):
                     send("Loged in.",client)
+                    session.append({client:username})
                     return f"{username} loged in."
                 elif(state == 0):
                     send("Account not existed",client)
@@ -183,7 +201,8 @@ def handle_message(message : str, client : socket.socket):
                 else:
                     send("Information you provided is not correct. Please check again.",client)
                     return None
-
+            elif(message.startswith('/key')):
+                return "Sent key"
             else:
                 return None
         else:    
