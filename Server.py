@@ -8,6 +8,7 @@ from charm.toolbox.pairinggroup import PairingGroup,ZR, G1, G2, GT
 import os
 import binascii
 from Crypto.Cipher import AES
+from Crypto.Util import Padding
 import hashlib
 from datetime import datetime
 import requests,json
@@ -61,15 +62,39 @@ def GetKey(keyname):
     r = requests.request("POST", action, headers=headers, data=payload)
     return json.loads(r.text)['document']['value']
 
-# def PrivateKeyGen(pk):
-#     mk = GetKey("master key")
-#     ctx = bytes.fromhex(mk)
-#     iv = ctx[:16]
-#     ctx = ctx[16:]
-#     aes = AES.new(key,AES.MODE_CBC,iv=iv)
-#     recover = aes.decrypt(ctx)
-#     mk = cpabe.bytesToObject(recover,cpabe.groupObj)
-#     cpabe.PrivateKeyGen(pk,mk,attribute=)
+def GetAttributes(username):
+    action = url + "findOne"
+    payload = json.dumps({
+    "collection": "Employees",
+    "database": "CompanyData",
+    "dataSource": "CA",
+    "filter": {"username":username},
+    "projection":{
+        "name":1,
+        "role":1,
+        "gender":1,
+        "location":1
+    }
+    })
+    r = requests.request("POST", action, headers=headers, data=payload)
+    return json.loads(r.text)['document']
+
+def PrivateKeyGen(pk,username):
+    mk = GetKey("master key")
+    ctx = bytes.fromhex(mk)
+    iv = ctx[:16]
+    ctx = ctx[16:]
+    aes = AES.new(key,AES.MODE_CBC,iv=iv)
+    recover = aes.decrypt(ctx)
+    mk = Padding.unpad(recover,AES.block_size)
+    mkb = cpabe.bytesToObject(mk,cpabe.groupObj)
+    attributes = []
+    attr = GetAttributes(username)
+    for i in attr.keys():
+        attributes.append(attr[i].upper())
+    sk = cpabe.PrivateKeyGen(pk,mkb,attribute=attributes)
+    sk = cpabe.objectToBytes(sk,cpabe.groupObj)
+    return binascii.hexlify(sk).decode()
 def send(message ,client : socket.socket):
     client.send(message.encode())
     return
@@ -236,6 +261,8 @@ def handle_message(message : str, client : socket.socket):
                 state = login(username,password)
                 if(state == 1):
                     send("Loged in.",client)
+                    if(isVerified(username)):
+                        send('@VERIFIED',client)
                     session.append({client:username})
                     return f"{username} loged in."
                 elif(state == 0):
@@ -267,11 +294,11 @@ def handle_message(message : str, client : socket.socket):
                         send("Information you provided is not correct. Please check again.",client)
                         return None
             elif(message.startswith('/key')):
+                username = GetDictValue(param=client,dict=session)
                 pk = GetKey("public key")
                 send("@PUBLIC" + pk,client)
-                # sk = PrivateKeyGen(pk)
-                send("@PRIVATE",client)
-                username = GetDictValue(param=client,dict=session)
+                sk = PrivateKeyGen(pk,username)
+                send("@PRIVATE"+ sk,client)
                 return f"Sent keys to {username}"
             else:
                 return None
