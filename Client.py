@@ -1,7 +1,11 @@
 import threading
 import socket,ssl
+import argparse
 import hashlib , binascii, base64
 import sys, os , pickle
+import json
+import requests
+import datetime
 from MyCrypto import CPABE as cpabe
 from charm.toolbox.pairinggroup import PairingGroup,ZR, G1, G2, GT
 from Crypto.Cipher import AES
@@ -13,6 +17,15 @@ from string import printable
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(('20.205.46.109', 1337))
 server_ip = '20.205.46.109'
+
+# Database=========================================
+url = "https://ap-southeast-1.aws.data.mongodb-api.com/app/data-zbetm/endpoint/data/v1/action/"
+apikey = open("client_api.key",'r').read()
+headers = {
+  'Content-Type': 'application/json',
+  'Access-Control-Request-Headers': '*',
+  'api-key': apikey,
+} 
 
 client_ssl = ssl.wrap_socket(
     client, 
@@ -55,7 +68,23 @@ def Help():
     ===============================================================
     """
     print(message)
-
+    
+def upload(content, filename, username):
+    action = url + "insertOne"
+    payload = json.dumps({
+    "collection": "Documents",
+    "database": "CompanyStorage",
+    "dataSource": "Cluster0",
+    "document": 
+    {
+        "filename":filename,
+        "owner": username,
+        "content":content,
+        'upload_date':str(datetime.date.today())
+    }
+    })
+    r = requests.request("POST", action, headers=headers, data=payload)
+    
 def ObfucasteAndHash(password):
     length = len(password)
     res = ""
@@ -70,7 +99,7 @@ def client_receive():
     global key
     while True:
         try:
-            message = client_ssl.read()
+            message = client_ssl.read(len=4096*2)
             if(message):
                 if(message == b"Loged in."):
                     LogedIn = True
@@ -121,11 +150,24 @@ def handle_input(message : str):
                 if(message.startswith("/key")):
                     return message.encode()
                 elif(message.startswith("/upload")):
+                    path = input("[+] Path to File : ")
+                    policy = input("[+] Policy : ")
+                    
                     return None 
                 elif(message.startswith("/download")):
                     return None 
-                elif(message.startswith("/search")):
-                    return None
+                # elif(message.startswith("/search")):
+                #     message = message.split(' ')
+                #     l = len(message)
+                #     for i in range(l):
+                #         if (l == 1):
+                #             print("[NOTI] No option found")
+                #             return None
+                #         elif(l == 2):
+                #             if(message[i]):
+                #     #https://viblo.asia/p/viet-cli-trong-python-de-dang-voi-argparse-XL6lA2ar5ek\
+                #     #https://docs.python.org/3/library/argparse.html           
+                #     return None 
             else:
                 print("[!] : You must verified first")
                 return None                 
