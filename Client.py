@@ -59,7 +59,6 @@ def Help():
     /key                              : get your private key
     /upload                           : choose file to upload
     /download                         : download files
-    /views                            : view files info
     /search [option : -d,-o,-n]       : search files
     -d : search by upload date
     -o : search by file owner name
