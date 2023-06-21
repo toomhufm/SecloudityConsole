@@ -13,23 +13,32 @@ from tabulate import tabulate
 from getpass import getpass
 from string import printable
 
+from pymongo import MongoClient
+import gridfs 
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+import gridfs
+
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(('20.205.46.109', 1337))
 server_ip = '20.205.46.109'
-
-# Database=========================================
-url = "https://ap-southeast-1.aws.data.mongodb-api.com/app/data-zbetm/endpoint/data/v1/action/"
-apikey = "hSl7T5DEqopdOtu6JYzUI4taQ6BwUmTSNRtBl2VXwIwpnMfjv13fsnpMxdgQltSX"
-headers = {
-  'Content-Type': 'application/json',
-  'Access-Control-Request-Headers': '*',
-  'api-key': apikey,
-} 
 
 client_ssl = ssl.wrap_socket(
     client, 
     ca_certs='../ssl/20.205.46.109.crt',
     )
+# Database 
+
+# Replace the placeholder with your Atlas connection string
+uri = "mongodb+srv://storage:admin123@cluster0.hjzxwtv.mongodb.net/?retryWrites=true&w=majority"
+
+# Set the Stable API version when creating a new client
+client = MongoClient(uri, server_api=ServerApi('1'))
+dbname = "CompanyStorage"       
+db = client[dbname]         
+file_collection = db['fs.files']
+fs = gridfs.GridFS(file_collection.database)
+# ================================================================================================
 
 # client_ssl.write(b"Hello Server!")
 def Banner():
@@ -59,65 +68,39 @@ def Help():
     /key                              : get your private key
     /upload                           : choose file to upload
     /download                         : download files
-    /search [option : -d,-o,-n]       : search files
+    /search [option : -d,-o,-e]       : search files
     -d : search by upload date
     -o : search by file owner name
-    -n : search by file name
+    -n : search by file extension
     ===============================================================
     """
     print(message)
     
-def upload(content, filename, username):
-    action = url + "insertOne"
-    payload = json.dumps({
-    "collection": "Documents",
-    "database": "CompanyStorage",
-    "dataSource": "Cluster0",
-    "document": 
-    {
-        "filename":filename + '.scd',
-        "owner": username,
-        "content":content,
-        "upload_date":str(datetime.date.today()),
-        "sha256" : binascii.hexlify(hashlib.sha256(bytes.fromhex(content)).digest()).decode()
-        
-    }
-    })
-    response = requests.request("POST", action, headers=headers, data=payload)
-    result = response.text 
-    if(result):
-        return True 
+def upload(content, file_name, username):
+    dup = fs.find_one(filter={"filename":file_name})
+    file_extension = file_name.replace('.scd','').split('.')[-1]
+    if(not dup):
+        hash = binascii.hexlify(hashlib.sha256(content).digest()).decode()
+        fs.put(content,filename=file_name,owner=username,extension=file_extension,upload_date=str(datetime.date.today()),sha256=hash)
+        return 1
     else:
-        return False
+        return -1
 
-def download(filename,path):
-    action = url + "findOne"
-    payload = json.dumps({
-    "collection": "Documents",
-    "database": "CompanyStorage",
-    "dataSource": "Cluster0",
-    "filter": {"filename":filename},
-    "projection": 
-    {
-        "content":1,
-        "sha256":1,
-        "filename":1
-    }
-    })
-    response = requests.request("POST", action, headers=headers, data=payload)
-    result = json.loads(response.text)['document'] 
-    if(result):
-        filename = result['filename'].replace('.scd','')
-        ctx = result['content']
-        content = cpabe.ABEdecryption(ctx,publickey,privatekey)
-        if(content):
-            with open(path+'/'+filename,'wb') as f:
-                f.write(content)
-            return True
+def download(file_name,path):
+    file = fs.find_one({"filename": file_name})
+    if file:
+        file_name = file_name.replace('.scd','')
+        enc = file.read().decode()
+        dec = cpabe.ABEdecryption(enc,publickey,privatekey)
+        if(dec):
+            with open(path+'/'+file_name, "wb") as f:
+                f.write(dec)
         else:
             return -1
+        return 1
     else:
-        return False    
+        return -1
+ 
 
 def ObfucasteAndHash(password):
     length = len(password)
@@ -128,7 +111,7 @@ def ObfucasteAndHash(password):
     return binascii.hexlify(obj).decode()
 
 def HandleSearch(message):
-    option = ['-d','-o','-n']
+    option = ['-d','-o','-e']
     msg = '/search'
     for i in message.split(' '):
         if i in option:
@@ -139,20 +122,20 @@ def HandleSearch(message):
             if(i == '-o'):
                 owner_name = input('Enter owner username :  ')
                 msg += f' -o {owner_name}'
-            if(i == '-n'):
-                filename = input('Enter file name : ')
-                msg += f' -n {filename}'
+            if(i == '-e'):
+                filename = input('Enter file extension : ')
+                msg += f' -e {filename}'
     return msg
 
 def Search(message):
-    option = ['-d','-n','-o']
+    option = ['-d','-o','-e']
     message = message.split(' ')
     op = [0]*3
     for msg in message:
         if msg in option:
             if(msg == '-d'):
                 op[0] = message[message.index(msg) + 1]
-            if(msg == '-n'):
+            if(msg == '-e'):
                 op[1] = message[message.index(msg) + 1]
             if(msg == '-o'):
                 op[2] = message[message.index(msg) + 1]
@@ -160,29 +143,14 @@ def Search(message):
     if(op[0]):
         filter['upload_date'] = op[0]
     if(op[1]):
-        filter['filename'] = op[1]
+        filter['extension'] = op[1]
     if(op[2]):
         filter['owner'] = op[2]
-    action = url + "find"
-    payload = json.dumps({
-        "collection": "Documents",
-        "database": "CompanyStorage",
-        "dataSource": "Cluster0",
-        "filter" : filter,
-        "projection":{
-            "filename":1,
-            "owner":1,
-            "upload_date":1,
-            "sha256":1
-        }
-    })    
-    
-    response = requests.request("POST", action, headers=headers, data=payload)
-    result = json.loads(response.text)['documents']
-    if(result):
-        to_print = len(result)*[0]
-        for i in range(len(result)):
-            to_print[i] = result[i]['_id'], result[i]['filename'],result[i]['owner'],result[i]['upload_date'],result[i]['sha256']
+    result = file_collection.find(filter)
+    to_print = []
+    for i, doc in enumerate(list(result), start=0):
+        to_print.append([doc['_id'], doc['filename'],doc['owner'],doc['upload_date'],doc['sha256']])
+    if(len(to_print) > 0):
         print(tabulate(to_print,headers=['ID','File Name','Owner','Upload Date','SHA256'],tablefmt='grid'))
     else:
         print("[!] Found 0 file")
@@ -256,8 +224,8 @@ def handle_input(message : str):
                     path = input("[+] Path to File : ").strip()
                     policy = input("[+] Policy : ").strip()
                     content = cpabe.ABEencryption(path,publickey,policy)
-                    content = binascii.hexlify(content).decode()
-                    filename = path.split('/')[-1]
+                    content = binascii.hexlify(content)
+                    filename = path.split('/')[-1] + '.scd'
                     if(upload(content,filename,USERNAME)):
                         print("[NOTI] File Uploaded")
                     else:
